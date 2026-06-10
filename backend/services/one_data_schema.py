@@ -1,17 +1,20 @@
 """Canonical 1 DATA row contract (Excel-aligned).
 
 Each row is what ``magic_numbers.DataSheet`` reads. Values are stored in MLN
-(millions) for dollar amounts unless noted. Fiscal years map to Excel columns
-5–16 (12 years, oldest → newest).
+(millions) for dollar amounts unless noted. Fiscal years map to columns
+starting at 5 (oldest → newest). Up to 20 years for public EDGAR cache;
+Excel MSFT preload may have fewer.
 """
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from typing import Literal
 
 YEAR_COL_START = 5
-YEAR_COL_COUNT = 12  # Excel layout; actual periods may be fewer on FMP free tier (5)
+YEAR_COL_COUNT = 20  # max history window (public demo: 20 FY)
+HISTORY_YEARS = min(int(os.environ.get("HISTORY_YEARS", str(YEAR_COL_COUNT))), YEAR_COL_COUNT)
 UNITS = "MLN"
 
 # Row numbers referenced by magic_numbers.py (and WACC row 11 cols 5–16 optional).

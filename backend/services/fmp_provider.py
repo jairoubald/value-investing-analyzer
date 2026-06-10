@@ -13,8 +13,8 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 # New accounts (2025+) use /stable/ — legacy /api/v3/ returns 403 for new keys.
 FMP_BASE = "https://financialmodelingprep.com/stable"
-# Free FMP tier: limit max 5. Starter+ allows 12+ (match Excel 1 DATA).
-DEFAULT_LIMIT = int(os.environ.get("FMP_STATEMENT_LIMIT", "5"))
+# Free FMP tier: limit max 5. Starter+ allows 20+. Set FMP_STATEMENT_LIMIT or HISTORY_YEARS.
+DEFAULT_LIMIT = int(os.environ.get("FMP_STATEMENT_LIMIT", os.environ.get("HISTORY_YEARS", "20")))
 
 
 class FMPError(RuntimeError):

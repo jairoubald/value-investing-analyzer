@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -11,16 +12,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from services.edgar_provider import EdgarError, fetch_company_facts
 from services.normalize_edgar import normalize_edgar_facts
+from services.one_data_schema import HISTORY_YEARS
 from services.top_tickers import TOP_US_TICKERS
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
 
 def main() -> None:
+    p = argparse.ArgumentParser(description="Prefetch EDGAR cache for top US tickers")
+    p.add_argument("--force", action="store_true", help="Re-download even if file exists")
+    args = p.parse_args()
+
+    print(f"History window: up to {HISTORY_YEARS} fiscal years (fewer if company is younger)")
     ok, fail = [], []
     for ticker in TOP_US_TICKERS:
         out = DATA_DIR / f"{ticker.lower()}_edgar_1data.json"
-        if out.exists():
+        if out.exists() and not args.force:
             print(f"  skip {ticker} (already cached)")
             ok.append(ticker)
             continue
@@ -28,8 +35,9 @@ def main() -> None:
         try:
             facts = fetch_company_facts(ticker)
             payload = normalize_edgar_facts(ticker, facts)
+            n = len(payload["years"])
             out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-            print(f"  OK {ticker} -> {out.name}")
+            print(f"  OK {ticker} -> {n} years ({payload['years'][0]['fy']} .. {payload['years'][-1]['fy']})")
             ok.append(ticker)
         except (EdgarError, ValueError) as exc:
             print(f"  FAIL {ticker}: {exc}")

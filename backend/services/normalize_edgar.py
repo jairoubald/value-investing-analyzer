@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from services.one_data_common import end_date_fmt, fy_label, to_float, to_mln, to_shares_mln
-from services.one_data_schema import ROW_BY_NUMBER, UNITS, YEAR_COL_START
+from services.one_data_schema import HISTORY_YEARS, ROW_BY_NUMBER, UNITS, YEAR_COL_START
 
 # us-gaap tag fallbacks per 1 DATA row (first match wins).
 ROW_TAGS: dict[int, tuple[str, ...]] = {
@@ -45,10 +45,28 @@ ROW_TAGS: dict[int, tuple[str, ...]] = {
     232: ("ProceedsFromRepaymentsOfDebt", "RepaymentsOfDebt"),
 }
 
-DEFAULT_YEARS = 5
+DEFAULT_YEARS = HISTORY_YEARS
 
 # Excel 1 DATA stores capex / dividends as negative cash outflows.
 NEGATE_FOR_EXCEL = frozenset({212, 222, 231})
+
+
+def _is_annual_period(row: dict[str, Any]) -> bool:
+    """Drop quarterly rows that sometimes appear under fp=FY in companyfacts."""
+    start = row.get("start")
+    end = row.get("end")
+    if start and end:
+        try:
+            d0 = datetime.strptime(start[:10], "%Y-%m-%d")
+            d1 = datetime.strptime(end[:10], "%Y-%m-%d")
+            if (d1 - d0).days < 350:
+                return False
+        except ValueError:
+            return False
+    frame = str(row.get("frame") or "")
+    if "Q" in frame.upper() and frame.upper() != "FY":
+        return False
+    return True
 
 
 def _annual_facts(facts: dict[str, Any], tag: str) -> list[dict[str, Any]]:
@@ -63,6 +81,8 @@ def _annual_facts(facts: dict[str, Any], tag: str) -> list[dict[str, Any]]:
                 continue
             form = row.get("form") or ""
             if form and not form.startswith(("10-K", "20-F", "40-F")):
+                continue
+            if not _is_annual_period(row):
                 continue
             rows.append(row)
     return rows
@@ -91,15 +111,13 @@ def _value_for_end(tag_series: dict[str, dict[str, Any]], end: str) -> float | N
 
 
 def _build_period_ends(facts: dict[str, Any], limit: int = DEFAULT_YEARS) -> list[str]:
-    """Period keys = fiscal year-end dates (not SEC fy integer — can misalign vs FMP)."""
-    rev: dict[str, dict[str, Any]] = {}
+    """Period keys = fiscal year-end dates. Returns up to ``limit`` FYs, or fewer if IPO is recent."""
+    all_ends: set[str] = set()
     for tag in ROW_TAGS[14]:
-        rev = _series_for_tag(facts, tag)
-        if rev:
-            break
-    if not rev:
+        all_ends.update(_series_for_tag(facts, tag).keys())
+    if not all_ends:
         raise ValueError("No annual revenue facts in EDGAR payload")
-    return sorted(rev.keys())[-limit:]
+    return sorted(all_ends)[-limit:]
 
 
 def _row_value(facts: dict[str, Any], row: int, end: str) -> float | None:

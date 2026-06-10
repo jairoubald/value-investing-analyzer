@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from services.one_data_schema import ROW_BY_NUMBER, UNITS, YEAR_COL_COUNT, YEAR_COL_START
+from services.one_data_schema import HISTORY_YEARS, ROW_BY_NUMBER, UNITS, YEAR_COL_COUNT, YEAR_COL_START
 
 
 def _f(v: Any) -> float | None:
@@ -39,7 +39,7 @@ def _sort_annual(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if len(out) < len(rows) // 2:
         out = list(rows)
     out.sort(key=lambda r: r.get("date") or r.get("calendarYear") or "")
-    return out[-YEAR_COL_COUNT:]
+    return out[-min(YEAR_COL_COUNT, HISTORY_YEARS):]
 
 
 def _index_by_date(

@@ -417,14 +417,19 @@ function renderMarketBar(mb) {
 
 function renderHeader(data) {
   document.getElementById("company-name").textContent = data.company || data.ticker;
+  const yrs = data.blocks?.[0]?.years || [];
+  const yrRange =
+    yrs.length >= 1
+      ? `${yrs.length} FY · ${yrs[0].replace("FY ", "")}–${yrs[yrs.length - 1].replace("FY ", "")}`
+      : "";
   const src =
     data.source === "fmp"
-      ? ` · FMP live`
+      ? ` · FMP`
       : data.source && data.source !== "preload"
         ? ` · ${data.source}`
         : "";
   document.getElementById("company-meta").textContent =
-    `${data.ticker} · ${data.currency} · ${data.units} · Tax ${data.tax_rate?.toFixed(2)}%${src}`;
+    `${data.ticker} · ${data.currency} · ${data.units}${yrRange ? ` · ${yrRange}` : ""}${src}`;
 
   const badge = document.getElementById("bb-badge");
   const fx = document.getElementById("bb-fx");
@@ -738,7 +743,8 @@ async function loadAndRender(ticker) {
     if (firstToggle) firstToggle.textContent = "−";
     if (sourceStatus) {
       const src = data.source || sourceForTicker(ticker);
-      sourceStatus.textContent = `Source: ${src.toUpperCase()} · cached · instant`;
+      const n = data.blocks?.[0]?.years?.length || 0;
+      sourceStatus.textContent = `Source: ${src.toUpperCase()} · ${n} years cached`;
     }
   } catch (err) {
     console.error(err);
