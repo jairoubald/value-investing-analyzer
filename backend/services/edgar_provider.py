@@ -22,6 +22,8 @@ KNOWN_CIK: dict[str, str] = {
     "GOOGL": "0001652044",
     "GOOG": "0001652044",
     "JPM": "0000019617",
+    "BRK-B": "0001067983",
+    "BRK.B": "0001067983",
 }
 
 
@@ -63,7 +65,7 @@ def _ticker_cik_map() -> dict[str, str]:
 
 
 def resolve_cik(symbol: str) -> str:
-    sym = symbol.upper()
+    sym = symbol.upper().replace(".", "-")
     if sym in KNOWN_CIK:
         return KNOWN_CIK[sym]
     mapping = _ticker_cik_map()

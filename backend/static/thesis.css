@@ -59,6 +59,7 @@ body {
   border-bottom: 1px solid var(--bb-border);
   font-size: 12px;
   min-height: 22px;
+  flex-wrap: wrap;
 }
 
 .bb-ticker-badge {
@@ -107,6 +108,49 @@ body {
 
 .bb-ticker-go:hover {
   background: var(--bb-white);
+}
+
+.bb-lookup-sep {
+  color: var(--bb-gray);
+  margin: 0 0.15rem;
+}
+
+.bb-ticker-input {
+  background: var(--bb-panel);
+  color: var(--bb-white);
+  border: 1px solid var(--bb-border-light);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  width: 5.5rem;
+  text-transform: uppercase;
+}
+
+.bb-ticker-search {
+  background: var(--bb-panel-2);
+  color: var(--bb-cyan);
+  border: 1px solid var(--bb-cyan);
+}
+
+.bb-ticker-status {
+  margin: 0;
+  padding: 0.1rem 0.5rem 0.25rem;
+  font-size: 11px;
+  color: var(--bb-gray-light);
+  min-height: 1.1rem;
+}
+
+.bb-ticker-status.ok {
+  color: var(--bb-green);
+}
+
+.bb-ticker-status.warn {
+  color: var(--bb-amber);
+}
+
+.bb-ticker-status.err {
+  color: var(--bb-red);
 }
 
 .bb-fx {

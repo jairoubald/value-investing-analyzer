@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -39,8 +40,20 @@ def cache_path(symbol: str, source: str) -> Path | None:
     return None
 
 
-def load_cached(symbol: str, source: str) -> dict | None:
+def load_cached(symbol: str, source: str = "auto") -> dict | None:
     path = cache_path(symbol, source)
     if not path:
         return None
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def save_cached(symbol: str, source: str, payload: dict[str, Any]) -> Path:
+    sym = symbol.lower()
+    if source == "edgar":
+        path = DATA_DIR / f"{sym}_edgar_1data.json"
+    elif source == "fmp":
+        path = DATA_DIR / f"{sym}_fmp_1data.json"
+    else:
+        path = DATA_DIR / f"{sym}_1data.json"
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return path

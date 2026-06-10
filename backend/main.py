@@ -10,7 +10,13 @@ from fastapi.staticfiles import StaticFiles
 from services.data_cache import list_cached_tickers, load_cached
 from services.magic_numbers import DataSheet, compute_magic_numbers, load_preloaded
 from services.stock_analyzer import analyze_ticker
-from services.top_tickers import TOP_US_TICKERS
+from services.ticker_lookup import (
+    get_job,
+    normalize_symbol,
+    start_live_fetch,
+    validate_symbol,
+)
+from services.top_tickers import TOP_US_50, TOP_US_TICKERS
 
 STATIC_DIR = Path(__file__).parent / "static"
 DATA_DIR = Path(__file__).parent / "data"
@@ -38,9 +44,11 @@ def health():
     return {
         "status": "ok",
         "cached_tickers": cached,
+        "top50_count": len(TOP_US_50),
         "live_fetch": _live_fetch_enabled(),
+        "live_search": True,
         "fmp_key_loaded": bool(os.environ.get("FMP_API_KEY", "").strip()),
-        "engine": "magic_numbers_v3_multi_source",
+        "engine": "magic_numbers_v4_top50_search",
         "sources": ["preload", "fmp", "edgar"],
     }
 
@@ -49,14 +57,54 @@ def health():
 def tickers():
     cached = set(list_cached_tickers())
     return {
-        "top_us": list(TOP_US_TICKERS),
+        "top_us": list(TOP_US_50),
+        "top10": list(TOP_US_TICKERS),
         "cached": sorted(cached),
-        "ready": [t for t in TOP_US_TICKERS if t in cached],
+        "ready": [t for t in TOP_US_50 if t in cached],
     }
+
+
+@app.get("/api/ticker/{ticker}")
+def ticker_lookup(ticker: str):
+    """Step 1: validate ticker exists (SEC) and whether data is cached."""
+    sym = normalize_symbol(ticker)
+    info = validate_symbol(sym)
+    info["in_top50"] = sym in TOP_US_50
+    return info
+
+
+@app.post("/api/ticker/{ticker}/refresh")
+def ticker_refresh(ticker: str):
+    """Step 2: fetch live from SEC EDGAR (background), save cache, poll /refresh/status."""
+    sym = normalize_symbol(ticker)
+    job = start_live_fetch(sym)
+    if job.get("status") == "failed":
+        raise HTTPException(status_code=400, detail=job.get("error", "Fetch failed"))
+    return {"symbol": sym, **job}
+
+
+@app.get("/api/ticker/{ticker}/refresh/status")
+def ticker_refresh_status(ticker: str):
+    sym = normalize_symbol(ticker)
+    job = get_job(sym)
+    if job:
+        return {"symbol": sym, **job}
+    cached = load_cached(sym, "edgar") is not None or load_cached(sym, "fmp") is not None
+    return {"symbol": sym, "status": "done" if cached else "idle", "cached": cached}
 
 
 def _thesis_from_payload(payload: dict) -> dict:
     return compute_magic_numbers(DataSheet(payload))
+
+
+def _resolve_cached(symbol: str, src: str) -> dict | None:
+    if src == "preload":
+        return load_cached(symbol, "preload")
+    if src == "fmp":
+        return load_cached(symbol, "fmp") or load_cached(symbol, "auto")
+    if src == "edgar":
+        return load_cached(symbol, "edgar") or load_cached(symbol, "auto")
+    return load_cached(symbol, "auto")
 
 
 def _live_fmp(symbol: str) -> dict:
@@ -77,23 +125,19 @@ def _live_edgar(symbol: str) -> dict:
 
 @app.get("/api/thesis/{ticker}")
 def thesis(ticker: str, source: str = "preload"):
-    symbol = ticker.strip().upper()
+    symbol = normalize_symbol(ticker)
     src = source.lower()
 
-    # 1) Always prefer on-disk cache (fast, no API cost — required for serverless hosts).
-    cached = load_cached(symbol, src)
+    cached = _resolve_cached(symbol, src)
     if cached:
         return _thesis_from_payload(cached)
 
-    # 2) Live APIs only when explicitly enabled (background jobs / dev).
     if not _live_fetch_enabled():
-        available = list_cached_tickers()
         raise HTTPException(
             status_code=404,
             detail=(
-                f"No cached data for {symbol} (source={src}). "
-                f"Available: {', '.join(available) or 'none'}. "
-                "Live fetch is disabled in production."
+                f"No cached data for {symbol}. "
+                "Use the search box — valid tickers can be fetched live from SEC EDGAR."
             ),
         )
 
@@ -103,24 +147,13 @@ def thesis(ticker: str, source: str = "preload"):
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"FMP homologation failed: {exc}") from exc
 
-    if src == "edgar":
+    if src in ("edgar", "preload"):
         try:
             return _thesis_from_payload(_live_edgar(symbol))
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"EDGAR homologation failed: {exc}") from exc
 
-    if src == "preload":
-        json_path = DATA_DIR / f"{symbol.lower()}_1data.json"
-        if json_path.exists():
-            import json
-
-            payload = json.loads(json_path.read_text(encoding="utf-8"))
-            return _thesis_from_payload(payload)
-
-    raise HTTPException(
-        status_code=404,
-        detail=f"Ticker {symbol} not found. Cached: {', '.join(list_cached_tickers())}",
-    )
+    raise HTTPException(status_code=404, detail=f"Ticker {symbol} not found.")
 
 
 @app.get("/api/thesis")

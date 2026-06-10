@@ -34,12 +34,105 @@ if (typeof Chart !== "undefined") {
   Chart.defaults.font.size = 10;
 }
 
-const TOP_US_TICKERS = [
+let TOP_US_TICKERS = [
   "MSFT", "AAPL", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "JPM", "V", "UNH",
 ];
 
 function sourceForTicker(ticker) {
   return ticker.toUpperCase() === "MSFT" ? "preload" : "edgar";
+}
+
+function setTickerStatus(text, level = "") {
+  const el = document.getElementById("ticker-status");
+  if (!el) return;
+  el.textContent = text || "";
+  el.className = "bb-ticker-status" + (level ? ` ${level}` : "");
+}
+
+async function fetchTickerList() {
+  try {
+    const res = await fetch("/api/tickers");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.top_us?.length) TOP_US_TICKERS = data.top_us;
+    }
+  } catch (_) {
+    /* use default list */
+  }
+}
+
+async function lookupTicker(symbol) {
+  const res = await fetch(`/api/ticker/${encodeURIComponent(symbol)}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Lookup failed");
+  }
+  return res.json();
+}
+
+async function pollRefreshUntilDone(symbol, maxWaitMs = 180000) {
+  const started = Date.now();
+  while Date.now() - started < maxWaitMs) {
+    const res = await fetch(`/api/ticker/${encodeURIComponent(symbol)}/refresh/status`);
+    const data = await res.json();
+    if (data.status === "done") return data;
+    if (data.status === "failed") throw new Error(data.error || "Live fetch failed");
+    await new Promise((r) => setTimeout(r, 2500));
+  }
+  throw new Error("Timed out waiting for SEC EDGAR (~3 min). Try again.");
+}
+
+async function startLiveFetch(symbol) {
+  const res = await fetch(`/api/ticker/${encodeURIComponent(symbol)}/refresh`, {
+    method: "POST",
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || data.error || "Could not start fetch");
+  if (data.status === "done") return data;
+  return pollRefreshUntilDone(symbol);
+}
+
+/** Validate → cache or live EDGAR → render thesis. */
+async function resolveAndLoad(rawSymbol) {
+  const sym = rawSymbol.trim().toUpperCase().replace(/\./g, "-");
+  if (!sym) {
+    setTickerStatus("Enter a ticker symbol.", "err");
+    return;
+  }
+
+  setTickerStatus(`Checking ${sym}…`, "warn");
+  let info;
+  try {
+    info = await lookupTicker(sym);
+  } catch (err) {
+    setTickerStatus(err.message, "err");
+    return;
+  }
+
+  if (!info.exists) {
+    setTickerStatus(info.message || `${sym} does not exist in SEC EDGAR.`, "err");
+    return;
+  }
+
+  if (info.cached) {
+    setTickerStatus(info.message || `${sym} — loading cached data…`, "ok");
+    await navigateTicker(sym);
+    setTickerStatus(`${sym} loaded from cache (instant).`, "ok");
+    return;
+  }
+
+  setTickerStatus(
+    `${sym} is valid · Fetching from SEC EDGAR (up to 20 years)… ~1–2 min`,
+    "warn",
+  );
+  try {
+    await startLiveFetch(sym);
+    setTickerStatus(`${sym} — data ready, rendering…`, "ok");
+    await navigateTicker(sym);
+    setTickerStatus(`${sym} loaded · live SEC data saved to cache.`, "ok");
+  } catch (err) {
+    setTickerStatus(err.message, "err");
+  }
 }
 
 function getUrlParams() {
@@ -688,36 +781,52 @@ function renderCharts(data) {
 }
 
 async function init() {
-  const nameEl = document.getElementById("company-name");
-  const metaEl = document.getElementById("company-meta");
   const selectEl = document.getElementById("ticker-select");
   const goBtn = document.getElementById("ticker-go");
+  const searchBtn = document.getElementById("ticker-search");
+  const inputEl = document.getElementById("ticker-input");
 
   tickClock();
   setInterval(tickClock, 1000);
+
+  await fetchTickerList();
 
   const { ticker: urlTicker } = getUrlParams();
   if (selectEl) {
     selectEl.innerHTML = TOP_US_TICKERS.map(
       (t) => `<option value="${t}"${t === urlTicker ? " selected" : ""}>${t}</option>`,
     ).join("");
-    goBtn?.addEventListener("click", () => navigateTicker(selectEl.value));
+    goBtn?.addEventListener("click", () => resolveAndLoad(selectEl.value));
     selectEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") navigateTicker(selectEl.value);
+      if (e.key === "Enter") resolveAndLoad(selectEl.value);
     });
   }
+
+  searchBtn?.addEventListener("click", () => {
+    const q = inputEl?.value?.trim() || selectEl?.value;
+    resolveAndLoad(q);
+  });
+  inputEl?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") resolveAndLoad(inputEl.value);
+  });
 
   await loadAndRender(urlTicker);
 }
 
 async function navigateTicker(ticker) {
-  const sym = ticker.toUpperCase();
+  const sym = ticker.toUpperCase().replace(/\./g, "-");
   const source = sourceForTicker(sym);
   const params = new URLSearchParams();
   if (sym !== "MSFT") params.set("ticker", sym);
   if (source !== "preload") params.set("source", source);
   const qs = params.toString();
   window.history.replaceState({}, "", qs ? `?${qs}` : "/");
+  if (document.getElementById("ticker-select")) {
+    document.getElementById("ticker-select").value = sym;
+  }
+  if (document.getElementById("ticker-input")) {
+    document.getElementById("ticker-input").value = sym;
+  }
   await loadAndRender(sym);
 }
 
