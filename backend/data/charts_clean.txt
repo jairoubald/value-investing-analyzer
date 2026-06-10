@@ -1,0 +1,109 @@
+﻿Total charts: 21
+
+--- Chart 1 | Section: 2 FINANCIAL PERFORMANCE & PROFITABILITY RATIOS | Row anchor ~28 | Type: BarChart ---
+Title: Revenues, Net Income
+  Series: EBIT <- '2 MAGIC NUMBERS'!$D$11:$O$11
+  Series: NET INCOME <- '2 MAGIC NUMBERS'!$D$15:$O$15
+
+--- Chart 2 | Section: 2 FINANCIAL PERFORMANCE & PROFITABILITY RATIOS | Row anchor ~28 | Type: LineChart ---
+Title: Profitability
+  Series: EBIT marg <- '2 MAGIC NUMBERS'!$D$38:$O$38
+  Series: EBT marg <- '2 MAGIC NUMBERS'!$D$39:$O$39
+  Series: NET margin <- '2 MAGIC NUMBERS'!$D$40:$O$40
+
+--- Chart 3 | Section: 1 GROWTH & FLOWS OF VALUE | Row anchor ~5 | Type: LineChart ---
+Title: Growth CFO, FCFF
+  Series: growth REVENUE <- '2 MAGIC NUMBERS'!$F$27:$O$27
+  Series: growth CFO <- '2 MAGIC NUMBERS'!$F$30:$O$30
+  Series: growth FCFF <- '2 MAGIC NUMBERS'!$F$31:$O$31
+
+--- Chart 4 | Section: 3 EQUITY & DEBT RATIOS | Row anchor ~48 | Type: BarChart ---
+Title: Assets
+  Series: Total Equity <- '2 MAGIC NUMBERS'!$D$105:$O$105
+  Series: Total Liabilties <- '2 MAGIC NUMBERS'!$D$128:$O$128
+
+--- Chart 5 | Section: 3 EQUITY & DEBT RATIOS | Row anchor ~48 | Type: LineChart ---
+Title: % of Assets
+  Series: Total Current Assets <- '2 MAGIC NUMBERS'!$D$109:$O$109
+  Series: Total Debt/Assets <- '2 MAGIC NUMBERS'!$D$130:$O$130
+
+--- Chart 6 | Section: 3 EQUITY & DEBT RATIOS | Row anchor ~48 | Type: LineChart ---
+Title: 
+  Series: Total Debt / Net Income <- '2 MAGIC NUMBERS'!$E$61:$O$61
+
+--- Chart 7 | Section: 3 EQUITY & DEBT RATIOS | Row anchor ~48 | Type: BarChart ---
+Title: LT & ST Debt
+  Series: ST Debt / Total Debt <- '2 MAGIC NUMBERS'!$E$62:$O$62
+  Series: LT Debt / Total Debt <- '2 MAGIC NUMBERS'!$E$63:$O$63
+
+--- Chart 8 | Section: 4 WHAT DOES IT DO WITH CASH? | Row anchor ~69 | Type: BarChart ---
+Title: 
+  Series: Adquisition / Net Income <- '2 MAGIC NUMBERS'!$E$64:$O$64
+
+--- Chart 9 | Section: 1 GROWTH & FLOWS OF VALUE | Row anchor ~5 | Type: LineChart ---
+Title: Flows of Value
+  Series: CFO/NI <- '2 MAGIC NUMBERS'!$E$46:$O$46
+  Series: FCFF/NI <- '2 MAGIC NUMBERS'!$E$47:$O$47
+  Series: CAPEX/CFO <- '2 MAGIC NUMBERS'!$E$48:$O$48
+
+--- Chart 10 | Section: 2 FINANCIAL PERFORMANCE & PROFITABILITY RATIOS | Row anchor ~27 | Type: LineChart ---
+Title: WACC
+  Series: ? <- '1 DATA'!$E$11:$P$11
+
+--- Chart 11 | Section: 1 GROWTH & FLOWS OF VALUE | Row anchor ~6 | Type: LineChart ---
+Title: Growth Revenue, Net Income, EPS
+  Series: growth REVENUE <- '2 MAGIC NUMBERS'!$F$27:$O$27
+  Series: growth NET INCOME <- '2 MAGIC NUMBERS'!$F$28:$O$28
+  Series: growth EPS <- '2 MAGIC NUMBERS'!$F$29:$O$29
+
+--- Chart 12 | Section: 4 WHAT DOES IT DO WITH CASH? | Row anchor ~70 | Type: LineChart ---
+Title: Shares Outstanding
+  Series: ? <- '1 DATA'!$E$177:$P$177
+
+--- Chart 13 | Section: 2 FINANCIAL PERFORMANCE & PROFITABILITY RATIOS | Row anchor ~27 | Type: BarChart ---
+Title: Equity $B & growth
+  Series: BOOK VALUE Growth <- '2 MAGIC NUMBERS'!$E$54:$O$54
+
+--- Chart 14 | Section: 5 BALANCE SHEET (EQUITY, ASSETS, LIABILITIES) | Row anchor ~93 | Type: BarChart ---
+Title: Total Current Assets
+  Series: Cash and  <- '2 MAGIC NUMBERS'!$D$77:$O$77
+  Series: Short Term Investments <- '2 MAGIC NUMBERS'!$D$78:$O$78
+  Series: Other current assets <- '2 MAGIC NUMBERS'!$D$79:$O$79
+
+--- Chart 15 | Section: 5 BALANCE SHEET (EQUITY, ASSETS, LIABILITIES) | Row anchor ~93 | Type: BarChart ---
+Title: Total Non Current Assets
+  Series: PPE <- '2 MAGIC NUMBERS'!$D$81:$O$81
+  Series: Goodwill <- '2 MAGIC NUMBERS'!$D$82:$O$82
+  Series: other Intangibles <- '2 MAGIC NUMBERS'!$D$83:$O$83
+  Series: LT Investment <- '2 MAGIC NUMBERS'!$D$84:$O$84
+
+--- Chart 16 | Section: 5 BALANCE SHEET (EQUITY, ASSETS, LIABILITIES) | Row anchor ~92 | Type: BarChart ---
+Title: Current Liabilities
+  Series: Payables & Accruals <- '2 MAGIC NUMBERS'!$D$89:$O$89
+  Series: ST Debt <- '2 MAGIC NUMBERS'!$D$90:$O$90
+  Series: Other ST Liabilities <- '2 MAGIC NUMBERS'!$D$91:$O$91
+
+--- Chart 17 | Section: 5 BALANCE SHEET (EQUITY, ASSETS, LIABILITIES) | Row anchor ~119 | Type: BarChart ---
+Title: Non Current Liabilities
+  Series: LT Debt <- '2 MAGIC NUMBERS'!$D$94:$O$94
+  Series: other LT Liabilities <- '2 MAGIC NUMBERS'!$D$95:$O$95
+
+--- Chart 18 | Section: 5 BALANCE SHEET (EQUITY, ASSETS, LIABILITIES) | Row anchor ~92 | Type: BarChart ---
+Title: Total Equity
+  Series: Shares Capital + Additional <- '2 MAGIC NUMBERS'!$D$71:$O$71
+  Series: Treasury Stocks <- '2 MAGIC NUMBERS'!$D$72:$O$72
+  Series: Retained Earnings <- '2 MAGIC NUMBERS'!$D$73:$O$73
+  Series: Other Equity <- '2 MAGIC NUMBERS'!$D$74:$O$74
+
+--- Chart 19 | Section: 4 WHAT DOES IT DO WITH CASH? | Row anchor ~70 | Type: BarChart ---
+Title: 
+  Series: Dividend Paid / FCFF <- '2 MAGIC NUMBERS'!$D$65:$O$65
+
+--- Chart 20 | Section: 4 WHAT DOES IT DO WITH CASH? | Row anchor ~69 | Type: BarChart ---
+Title: 
+  Series: Repayment Debt/ FCFF <- '2 MAGIC NUMBERS'!$D$66:$O$66
+
+--- Chart 21 | Section: 1 GROWTH & FLOWS OF VALUE | Row anchor ~6 | Type: BarChart ---
+Title: 
+  Series: NET INCOME <- '2 MAGIC NUMBERS'!$D$15:$O$15
+
