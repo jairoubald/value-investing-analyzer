@@ -25,6 +25,23 @@ load_dotenv(Path(__file__).parent / ".env")
 
 app = FastAPI(title="Financial Thesis Tool")
 
+
+@app.on_event("startup")
+def _warm_sec_ticker_map() -> None:
+    """Pre-load SEC ticker list so LOOKUP is not slow on first custom search."""
+    import threading
+
+    def _run() -> None:
+        try:
+            from services.edgar_provider import _ticker_cik_map
+
+            _ticker_cik_map()
+        except Exception:
+            pass
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

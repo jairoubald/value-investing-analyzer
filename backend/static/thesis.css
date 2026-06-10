@@ -106,8 +106,15 @@ body {
   cursor: pointer;
 }
 
-.bb-ticker-go:hover {
+.bb-ticker-go:hover:not(:disabled) {
   background: var(--bb-white);
+}
+
+.bb-ticker-select:disabled,
+.bb-ticker-input:disabled,
+.bb-ticker-go:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 .bb-lookup-sep {

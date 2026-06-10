@@ -35,7 +35,16 @@ def validate_symbol(raw: str) -> dict[str, Any]:
             "message": "Invalid ticker format.",
         }
 
-    cached = load_cached(sym, "edgar") is not None or cache_path(sym, "preload") is not None
+    cached = cache_path(sym, "auto") is not None
+    if cached:
+        return {
+            "symbol": sym,
+            "exists": True,
+            "cached": True,
+            "reason": "cached",
+            "message": f"{sym} — cached, loads instantly.",
+        }
+
     try:
         cik = resolve_cik(sym)
     except EdgarError:
