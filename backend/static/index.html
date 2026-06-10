@@ -5,88 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>THESIS · MAGIC NUMBERS</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="/static/thesis.css?v=13" />
+    <link rel="stylesheet" href="/static/thesis.css?v=14" />
   </head>
   <body>
     <div class="bb-terminal">
-      <!-- Bloomberg quote row: ticker badge + cyan market strip -->
       <div class="bb-quote-row">
         <span class="bb-ticker-badge" id="bb-badge">MSFT</span>
         <span class="bb-fx" id="bb-fx">US $</span>
         <div class="bb-ticker-lookup">
-          <label class="bb-lookup-label" for="ticker-select">TOP 50</label>
+          <label class="bb-lookup-label" for="ticker-select">TICKER</label>
           <select id="ticker-select" class="bb-ticker-select" aria-label="Select ticker">
             <option value="MSFT" selected>MSFT</option>
             <option value="AAPL">AAPL</option>
             <option value="NVDA">NVDA</option>
             <option value="GOOGL">GOOGL</option>
             <option value="AMZN">AMZN</option>
-            <option value="META">META</option>
-            <option value="BRK-B">BRK-B</option>
-            <option value="TSLA">TSLA</option>
-            <option value="LLY">LLY</option>
-            <option value="AVGO">AVGO</option>
-            <option value="JPM">JPM</option>
-            <option value="V">V</option>
-            <option value="UNH">UNH</option>
-            <option value="WMT">WMT</option>
-            <option value="XOM">XOM</option>
-            <option value="MA">MA</option>
-            <option value="ORCL">ORCL</option>
-            <option value="COST">COST</option>
-            <option value="PG">PG</option>
-            <option value="JNJ">JNJ</option>
-            <option value="HD">HD</option>
-            <option value="NFLX">NFLX</option>
-            <option value="BAC">BAC</option>
-            <option value="CRM">CRM</option>
-            <option value="MRK">MRK</option>
-            <option value="AMD">AMD</option>
-            <option value="KO">KO</option>
-            <option value="PEP">PEP</option>
-            <option value="TMO">TMO</option>
-            <option value="CSCO">CSCO</option>
-            <option value="WFC">WFC</option>
-            <option value="LIN">LIN</option>
-            <option value="DIS">DIS</option>
-            <option value="MCD">MCD</option>
-            <option value="ACN">ACN</option>
-            <option value="ADBE">ADBE</option>
-            <option value="TXN">TXN</option>
-            <option value="GE">GE</option>
-            <option value="IBM">IBM</option>
-            <option value="QCOM">QCOM</option>
-            <option value="CAT">CAT</option>
-            <option value="INTU">INTU</option>
-            <option value="AMAT">AMAT</option>
-            <option value="DHR">DHR</option>
-            <option value="SPGI">SPGI</option>
-            <option value="LOW">LOW</option>
-            <option value="HON">HON</option>
-            <option value="UPS">UPS</option>
-            <option value="BKNG">BKNG</option>
-            <option value="MS">MS</option>
           </select>
           <button type="button" id="ticker-go" class="bb-ticker-go">GO</button>
-          <span class="bb-lookup-sep">|</span>
-          <label class="bb-lookup-label" for="ticker-input">SEARCH</label>
-          <input
-            id="ticker-input"
-            class="bb-ticker-input"
-            type="text"
-            maxlength="12"
-            placeholder="e.g. CRM"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <button type="button" id="ticker-search" class="bb-ticker-go bb-ticker-search">LOOKUP</button>
         </div>
-        <p id="ticker-status" class="bb-ticker-status" aria-live="polite"></p>
         <span class="bb-spacer"></span>
         <span class="bb-market-strip" id="bb-market-strip">Market P — / —</span>
       </div>
 
-      <!-- Red toolbar (Bloomberg chart header) -->
       <div class="bb-redbar">
         <span class="bb-redbar-item">Thesis Tool</span>
         <span class="bb-redbar-sep">|</span>
@@ -101,10 +41,10 @@
             <span class="bb-key">NAV</span>
             <span class="bb-panel-title">Sections</span>
           </div>
-          <h1 id="company-name" class="bb-security">Loading…</h1>
+          <h1 id="company-name" class="bb-security">Microsoft Corporation</h1>
           <p id="company-meta" class="meta"></p>
           <nav id="block-nav" class="block-nav"></nav>
-          <p class="sidebar-note">Top 50 US · search any SEC ticker</p>
+          <p class="sidebar-note">5 companies · preloaded · instant</p>
         </aside>
 
         <main class="main">
@@ -126,24 +66,13 @@
       </div>
 
       <footer class="bb-statusbar">
-        <span id="bb-source-status" class="bb-status-item">Source: —</span>
+        <span id="bb-source-status" class="bb-status-item">Source: preload</span>
         <span class="bb-sep">|</span>
         <span class="bb-status-item">Engine: Magic Numbers</span>
         <span class="bb-spacer"></span>
         <span id="bb-clock" class="bb-status-item bb-dim"></span>
       </footer>
     </div>
-    <script src="/static/thesis.js?v=19"></script>
-    <script>
-      /* Fallback if server is slow (Render free tier wake-up) */
-      setTimeout(function () {
-        var name = document.getElementById("company-name");
-        var meta = document.getElementById("company-meta");
-        if (name && name.textContent.indexOf("Loading") >= 0) {
-          name.textContent = "Connecting to server…";
-          if (meta) meta.textContent = "First visit may take 30–60 seconds. Please wait.";
-        }
-      }, 10000);
-    </script>
+    <script src="/static/thesis.js?v=20"></script>
   </body>
 </html>

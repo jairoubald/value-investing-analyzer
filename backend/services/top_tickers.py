@@ -1,58 +1,14 @@
-"""Largest US listed companies (S&P-style top 50) — pre-cached for instant demo."""
+"""Five preloaded tickers — instant demo (no live API on page load)."""
 
-# SEC tickers use dashes (BRK-B not BRK.B).
-TOP_US_50: tuple[str, ...] = (
-    "AAPL",
+TOP_US_TICKERS: tuple[str, ...] = (
     "MSFT",
+    "AAPL",
     "NVDA",
     "GOOGL",
     "AMZN",
-    "META",
-    "BRK-B",
-    "TSLA",
-    "LLY",
-    "AVGO",
-    "JPM",
-    "V",
-    "UNH",
-    "WMT",
-    "XOM",
-    "MA",
-    "ORCL",
-    "COST",
-    "PG",
-    "JNJ",
-    "HD",
-    "NFLX",
-    "BAC",
-    "CRM",
-    "MRK",
-    "AMD",
-    "KO",
-    "PEP",
-    "TMO",
-    "CSCO",
-    "WFC",
-    "LIN",
-    "DIS",
-    "MCD",
-    "ACN",
-    "ADBE",
-    "TXN",
-    "GE",
-    "IBM",
-    "QCOM",
-    "CAT",
-    "INTU",
-    "AMAT",
-    "DHR",
-    "SPGI",
-    "LOW",
-    "HON",
-    "UPS",
-    "BKNG",
-    "MS",
 )
 
-# Backward-compatible alias (first 10 of the 50).
-TOP_US_TICKERS = TOP_US_50[:10]
+PRELOADED_TICKERS = frozenset(TOP_US_TICKERS)
+
+# Archived list (top-50 + search build) kept for later — see docs/ARCHIVE_TOP50.md
+TOP_US_50: tuple[str, ...] = TOP_US_TICKERS

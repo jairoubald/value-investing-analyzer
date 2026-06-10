@@ -34,197 +34,26 @@ if (typeof Chart !== "undefined") {
   Chart.defaults.font.size = 10;
 }
 
-let TOP_US_TICKERS = [
-  "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "BRK-B", "TSLA", "LLY", "AVGO",
-  "JPM", "V", "UNH", "WMT", "XOM", "MA", "ORCL", "COST", "PG", "JNJ",
-  "HD", "NFLX", "BAC", "CRM", "MRK", "AMD", "KO", "PEP", "TMO", "CSCO",
-  "WFC", "LIN", "DIS", "MCD", "ACN", "ADBE", "TXN", "GE", "IBM", "QCOM",
-  "CAT", "INTU", "AMAT", "DHR", "SPGI", "LOW", "HON", "UPS", "BKNG", "MS",
-];
-
-function sourceForTicker(ticker) {
-  return ticker.toUpperCase() === "MSFT" ? "preload" : "edgar";
-}
-
-function setTickerStatus(text, level = "") {
-  const el = document.getElementById("ticker-status");
-  if (!el) return;
-  el.textContent = text || "";
-  el.className = "bb-ticker-status" + (level ? ` ${level}` : "");
-}
-
-function setUiBusy(busy) {
-  document.querySelectorAll("#ticker-go, #ticker-search, #ticker-select, #ticker-input").forEach((el) => {
-    if (el) el.disabled = busy;
-  });
-}
-
-async function fetchWithTimeout(url, options = {}, ms = 120000) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(url, { ...options, signal: ctrl.signal });
-  } catch (err) {
-    if (err.name === "AbortError") {
-      throw new Error(
-        "Server slow to respond (Render may be waking up). Wait 30–60 seconds and try GO again.",
-      );
-    }
-    throw err;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function populateTickerSelect(selectEl, selected) {
-  if (!selectEl) return;
-  /* Keep static HTML options if JS list unavailable */
-  if (!TOP_US_TICKERS.length && selectEl.options.length) return;
-  selectEl.innerHTML = TOP_US_TICKERS.map(
-    (t) => `<option value="${t}"${t === selected ? " selected" : ""}>${t}</option>`,
-  ).join("");
-}
-
-async function fetchTickerList() {
-  try {
-    const res = await fetchWithTimeout("/api/tickers", {}, 15000);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.top_us?.length) TOP_US_TICKERS = data.top_us;
-    }
-  } catch (_) {
-    /* use built-in list */
-  }
-}
-
-async function lookupTicker(symbol) {
-  const res = await fetchWithTimeout(`/api/ticker/${encodeURIComponent(symbol)}`, {}, 30000);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || "Lookup failed");
-  }
-  return res.json();
-}
-
-async function pollRefreshUntilDone(symbol, maxWaitMs = 180000) {
-  const started = Date.now();
-  while Date.now() - started < maxWaitMs) {
-    const res = await fetch(`/api/ticker/${encodeURIComponent(symbol)}/refresh/status`);
-    const data = await res.json();
-    if (data.status === "done") return data;
-    if (data.status === "failed") throw new Error(data.error || "Live fetch failed");
-    await new Promise((r) => setTimeout(r, 2500));
-  }
-  throw new Error("Timed out waiting for SEC EDGAR (~3 min). Try again.");
-}
-
-async function startLiveFetch(symbol) {
-  const res = await fetch(`/api/ticker/${encodeURIComponent(symbol)}/refresh`, {
-    method: "POST",
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || data.error || "Could not start fetch");
-  if (data.status === "done") return data;
-  return pollRefreshUntilDone(symbol);
-}
-
-/** Top-50 dropdown: load cache directly (no SEC lookup). */
-async function loadFromDropdown(rawSymbol) {
-  const sym = rawSymbol.trim().toUpperCase().replace(/\./g, "-");
-  if (!sym) return;
-  setUiBusy(true);
-  setTickerStatus(`Loading ${sym}…`, "warn");
-  try {
-    await navigateTicker(sym);
-    setTickerStatus(`${sym} ready.`, "ok");
-  } catch (err) {
-    setTickerStatus(err.message, "err");
-  } finally {
-    setUiBusy(false);
-  }
-}
-
-/** Search box: validate SEC → cache or live fetch. */
-async function resolveAndLoad(rawSymbol) {
-  const sym = rawSymbol.trim().toUpperCase().replace(/\./g, "-");
-  if (!sym) {
-    setTickerStatus("Enter a ticker symbol.", "err");
-    return;
-  }
-
-  setUiBusy(true);
-  setTickerStatus(`Checking ${sym}…`, "warn");
-  let info;
-  try {
-    info = await lookupTicker(sym);
-  } catch (err) {
-    setTickerStatus(err.message, "err");
-    setUiBusy(false);
-    return;
-  }
-
-  if (!info.exists) {
-    setTickerStatus(info.message || `${sym} does not exist in SEC EDGAR.`, "err");
-    setUiBusy(false);
-    return;
-  }
-
-  if (info.cached) {
-    setTickerStatus(`${sym} — loading cached data…`, "ok");
-    try {
-      await navigateTicker(sym);
-      setTickerStatus(`${sym} loaded from cache.`, "ok");
-    } catch (err) {
-      setTickerStatus(err.message, "err");
-    } finally {
-      setUiBusy(false);
-    }
-    return;
-  }
-
-  setTickerStatus(
-    `${sym} is valid · Fetching from SEC EDGAR (up to 20 years)… ~1–2 min`,
-    "warn",
-  );
-  try {
-    await startLiveFetch(sym);
-    setTickerStatus(`${sym} — data ready, rendering…`, "ok");
-    await navigateTicker(sym);
-    setTickerStatus(`${sym} loaded · live SEC data saved to cache.`, "ok");
-  } catch (err) {
-    setTickerStatus(err.message, "err");
-  } finally {
-    setUiBusy(false);
-  }
-}
+const PRELOADED_TICKERS = ["MSFT", "AAPL", "NVDA", "GOOGL", "AMZN"];
 
 function getUrlParams() {
   const p = new URLSearchParams(window.location.search);
-  let ticker = (p.get("ticker") || "MSFT").toUpperCase();
-  let source = p.get("source");
-  if (!source) {
-    source = sourceForTicker(ticker);
-  }
-  return { ticker, source };
+  const ticker = (p.get("ticker") || "MSFT").toUpperCase();
+  return { ticker: PRELOADED_TICKERS.includes(ticker) ? ticker : "MSFT" };
 }
 
-async function loadThesis(ticker, sourceOverride) {
-  const sym = (ticker || getUrlParams().ticker).toUpperCase();
-  const source = sourceOverride ?? getUrlParams().source ?? sourceForTicker(sym);
-  const qs =
-    source && source !== "preload" ? `?source=${encodeURIComponent(source)}` : "";
-  const res = await fetchWithTimeout(`/api/thesis/${sym}${qs}`, {}, 120000);
+async function loadThesis(ticker) {
+  const sym = ticker.toUpperCase();
+  const res = await fetch(`/api/thesis/${sym}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    const detail = err.detail || "Failed to load thesis data";
-    if (res.status === 404) {
-      throw new Error(
-        `${detail} If this is a Top 50 name, redeploy may be missing cache files — push latest code to GitHub.`,
-      );
-    }
-    throw new Error(detail);
+    throw new Error(err.detail || "Failed to load thesis data");
   }
   return res.json();
+}
+
+function sourceForTicker(ticker) {
+  return ticker.toUpperCase() === "MSFT" ? "preload" : "edgar";
 }
 
 function getBlockDisplay(block) {
@@ -852,52 +681,26 @@ function renderCharts(data) {
 async function init() {
   const selectEl = document.getElementById("ticker-select");
   const goBtn = document.getElementById("ticker-go");
-  const searchBtn = document.getElementById("ticker-search");
-  const inputEl = document.getElementById("ticker-input");
 
   tickClock();
   setInterval(tickClock, 1000);
 
   const { ticker: urlTicker } = getUrlParams();
-  populateTickerSelect(selectEl, urlTicker);
+  if (selectEl) selectEl.value = urlTicker;
+  goBtn?.addEventListener("click", () => navigateTicker(selectEl.value));
 
-  if (selectEl) {
-    goBtn?.addEventListener("click", () => loadFromDropdown(selectEl.value));
-    selectEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") loadFromDropdown(selectEl.value);
-    });
-  }
-
-  searchBtn?.addEventListener("click", () => {
-    const q = inputEl?.value?.trim();
-    if (q) resolveAndLoad(q);
-    else setTickerStatus("Type a ticker in SEARCH, then LOOKUP.", "err");
-  });
-  inputEl?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && inputEl.value.trim()) resolveAndLoad(inputEl.value);
-  });
-
-  // Load thesis immediately — do not wait for /api/tickers (Render cold start).
-  loadAndRender(urlTicker);
-
-  fetchTickerList().then(() => {
-    populateTickerSelect(selectEl, getUrlParams().ticker);
-  });
+  await loadAndRender(urlTicker);
 }
 
 async function navigateTicker(ticker) {
-  const sym = ticker.toUpperCase().replace(/\./g, "-");
-  const source = sourceForTicker(sym);
+  const sym = ticker.toUpperCase();
+  if (!PRELOADED_TICKERS.includes(sym)) return;
   const params = new URLSearchParams();
   if (sym !== "MSFT") params.set("ticker", sym);
-  if (source !== "preload") params.set("source", source);
   const qs = params.toString();
   window.history.replaceState({}, "", qs ? `?${qs}` : "/");
   if (document.getElementById("ticker-select")) {
     document.getElementById("ticker-select").value = sym;
-  }
-  if (document.getElementById("ticker-input")) {
-    document.getElementById("ticker-input").value = sym;
   }
   await loadAndRender(sym);
 }
@@ -905,27 +708,10 @@ async function navigateTicker(ticker) {
 async function loadAndRender(ticker) {
   const nameEl = document.getElementById("company-name");
   const metaEl = document.getElementById("company-meta");
-  const selectEl = document.getElementById("ticker-select");
   const sourceStatus = document.getElementById("bb-source-status");
-
-  if (!nameEl) return;
-
-  nameEl.textContent = "Loading…";
-  if (metaEl) metaEl.textContent = "Fetching data…";
-  setTickerStatus(`Loading ${ticker}…`, "warn");
-  if (selectEl) selectEl.value = ticker.toUpperCase().replace(/\./g, "-");
-
-  const slowTimer = setTimeout(() => {
-    if (nameEl.textContent === "Loading…") {
-      nameEl.textContent = "Connecting to server…";
-      if (metaEl) metaEl.textContent = "Render may take 30–60s to wake up. Please wait.";
-      setTickerStatus("Server waking up — please wait…", "warn");
-    }
-  }, 8000);
 
   try {
     const data = await loadThesis(ticker);
-    clearTimeout(slowTimer);
     renderHeader(data);
     renderNav(data.blocks);
     renderCharts(data);
@@ -935,29 +721,18 @@ async function loadAndRender(ticker) {
     const firstToggle = document.querySelector("#block-0 .section-toggle .chevron");
     if (firstToggle) firstToggle.textContent = "−";
     if (sourceStatus) {
-      const src = data.source || sourceForTicker(ticker);
-      const n = data.blocks?.[0]?.years?.length || 0;
-      sourceStatus.textContent = `Source: ${src.toUpperCase()} · ${n} years cached`;
+      const src = data.source || "preload";
+      sourceStatus.textContent = `Source: ${src.toUpperCase()} · cached`;
     }
-    setTickerStatus(`${ticker} ready.`, "ok");
   } catch (err) {
-    clearTimeout(slowTimer);
     console.error(err);
-    nameEl.textContent = "Error loading data";
+    if (nameEl) nameEl.textContent = "Error loading data";
     if (metaEl) metaEl.textContent = err.message;
     const blocks = document.getElementById("blocks-container");
     if (blocks) {
       blocks.innerHTML = `<p class="error-banner">Could not load ${ticker}: ${err.message}</p>`;
     }
-    if (sourceStatus) sourceStatus.textContent = "Source: unavailable";
-    setTickerStatus(err.message, "err");
   }
 }
 
-try {
-  init();
-} catch (err) {
-  console.error(err);
-  const meta = document.getElementById("company-meta");
-  if (meta) meta.textContent = "UI error: " + err.message + " — hard refresh (Ctrl+F5).";
-}
+init();
