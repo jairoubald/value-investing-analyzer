@@ -124,17 +124,74 @@ function setTickerInputValue(ticker) {
   if (input) input.value = resolveTicker(ticker);
 }
 
-function populateTickerDatalist(tickers) {
-  const datalist = document.getElementById("ticker-datalist");
-  if (!datalist || !tickers.length) return;
-  const byTicker = new Map(TICKER_CATALOG.map((row) => [row.ticker, row.company]));
-  datalist.innerHTML = tickers
-    .map((t) => {
-      const company = byTicker.get(t) || t;
-      const label = company !== t ? `${t} · ${company}` : t;
-      return `<option value="${escapeHtml(t)}" label="${escapeHtml(label)}"></option>`;
-    })
+function releaseMobileInputZoom() {
+  const input = document.getElementById("ticker-input");
+  const search = document.getElementById("ticker-picker-search");
+  if (document.activeElement === input) input.blur();
+  if (document.activeElement === search) search.blur();
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+  });
+}
+
+function renderTickerPickerList(query) {
+  const listEl = document.getElementById("ticker-picker-list");
+  if (!listEl) return;
+  const q = String(query || "").trim().toLowerCase();
+  const rows = TICKER_CATALOG.filter((row) => {
+    if (!q) return true;
+    return row.ticker.toLowerCase().includes(q) || row.company.toLowerCase().includes(q);
+  });
+  if (!rows.length) {
+    listEl.innerHTML = `<p class="ticker-picker-empty">No matches for “${escapeHtml(q)}”.</p>`;
+    return;
+  }
+  listEl.innerHTML = rows
+    .map(
+      (row) => `
+        <button type="button" class="ticker-picker-item" data-ticker="${escapeHtml(row.ticker)}" role="option">
+          <span class="ticker-picker-item-sym">${escapeHtml(row.ticker)}</span>
+          <span class="ticker-picker-item-name">${escapeHtml(row.company)}</span>
+        </button>`
+    )
     .join("");
+}
+
+function setTickerPickerOpen(open) {
+  const root = document.getElementById("ticker-picker");
+  const toggle = document.getElementById("ticker-picker-toggle");
+  const input = document.getElementById("ticker-input");
+  if (!root) return;
+  root.hidden = !open;
+  root.setAttribute("aria-hidden", open ? "false" : "true");
+  root.classList.toggle("ticker-picker--open", open);
+  document.body.classList.toggle("ticker-picker-open", open);
+  toggle?.setAttribute("aria-expanded", open ? "true" : "false");
+  input?.setAttribute("aria-expanded", open ? "true" : "false");
+  if (!open) {
+    releaseMobileInputZoom();
+    return;
+  }
+  const search = document.getElementById("ticker-picker-search");
+  renderTickerPickerList(search?.value || "");
+  if (!isMobileLayout()) {
+    window.setTimeout(() => search?.focus(), 0);
+  }
+}
+
+function openTickerPicker() {
+  setTickerPickerOpen(true);
+}
+
+function closeTickerPicker() {
+  setTickerPickerOpen(false);
+}
+
+function toggleTickerPicker() {
+  const root = document.getElementById("ticker-picker");
+  if (!root) return;
+  if (root.hidden) openTickerPicker();
+  else closeTickerPicker();
 }
 
 async function fetchReadyTickers() {
@@ -158,78 +215,51 @@ async function fetchReadyTickers() {
   } catch {
     TICKER_CATALOG = READY_TICKERS.map((t) => ({ ticker: t, company: t }));
   }
-  populateTickerDatalist(READY_TICKERS);
   const note = document.getElementById("sidebar-ticker-note");
   if (note) note.textContent = `${READY_TICKERS.length} companies · cached · instant`;
-  const countEl = document.getElementById("ticker-browser-count");
+  const countEl = document.getElementById("ticker-picker-count");
   if (countEl) countEl.textContent = `${READY_TICKERS.length} ready`;
-  renderTickerBrowserList("");
+  renderTickerPickerList("");
   return READY_TICKERS;
 }
 
-function renderTickerBrowserList(query) {
-  const listEl = document.getElementById("ticker-browser-list");
-  if (!listEl) return;
-  const q = String(query || "").trim().toLowerCase();
-  const rows = TICKER_CATALOG.filter((row) => {
-    if (!q) return true;
-    return row.ticker.toLowerCase().includes(q) || row.company.toLowerCase().includes(q);
+function bindTickerPicker() {
+  const root = document.getElementById("ticker-picker");
+  const search = document.getElementById("ticker-picker-search");
+  const listEl = document.getElementById("ticker-picker-list");
+  const toggle = document.getElementById("ticker-picker-toggle");
+
+  toggle?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleTickerPicker();
   });
-  if (!rows.length) {
-    listEl.innerHTML = `<p class="ticker-browser-empty">No matches for “${escapeHtml(q)}”.</p>`;
-    return;
-  }
-  listEl.innerHTML = rows
-    .map(
-      (row) => `
-        <button type="button" class="ticker-browser-item" data-ticker="${escapeHtml(row.ticker)}" role="option">
-          <span class="ticker-browser-item-sym">${escapeHtml(row.ticker)}</span>
-          <span class="ticker-browser-item-name">${escapeHtml(row.company)}</span>
-        </button>`
-    )
-    .join("");
-}
 
-function openTickerBrowser() {
-  const root = document.getElementById("ticker-browser");
-  const search = document.getElementById("ticker-browser-search");
-  if (!root) return;
-  root.hidden = false;
-  root.setAttribute("aria-hidden", "false");
-  document.body.classList.add("ticker-browser-open");
-  renderTickerBrowserList(search?.value || "");
-  window.setTimeout(() => search?.focus(), 0);
-}
-
-function closeTickerBrowser() {
-  const root = document.getElementById("ticker-browser");
-  if (!root) return;
-  root.hidden = true;
-  root.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("ticker-browser-open");
-}
-
-function bindTickerBrowser() {
-  const root = document.getElementById("ticker-browser");
-  const search = document.getElementById("ticker-browser-search");
-  const listEl = document.getElementById("ticker-browser-list");
-  document.getElementById("ticker-browse")?.addEventListener("click", openTickerBrowser);
-  root?.querySelectorAll("[data-close-ticker-browser]").forEach((el) => {
-    el.addEventListener("click", closeTickerBrowser);
+  root?.querySelectorAll("[data-close-ticker-picker]").forEach((el) => {
+    el.addEventListener("click", closeTickerPicker);
   });
-  search?.addEventListener("input", () => renderTickerBrowserList(search.value));
+
+  search?.addEventListener("input", () => renderTickerPickerList(search.value));
+
   listEl?.addEventListener("click", (event) => {
     const btn = event.target.closest("[data-ticker]");
     if (!btn) return;
     const sym = btn.getAttribute("data-ticker");
-    closeTickerBrowser();
+    closeTickerPicker();
     navigateTicker(sym);
   });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && root && !root.hidden) {
       event.preventDefault();
-      closeTickerBrowser();
+      closeTickerPicker();
     }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!root || root.hidden || isMobileLayout()) return;
+    if (event.target.closest("#ticker-picker-panel") || event.target.closest("#ticker-picker-toggle")) return;
+    closeTickerPicker();
   });
 }
 
@@ -257,9 +287,11 @@ function submitTickerFromInput() {
   if (!input) return;
   const sym = findCachedTicker(input.value);
   if (!sym) {
-    showTickerInputError(`Ticker “${normalizeTickerInput(input.value)}” is not cached. Open ALL or pick from suggestions.`);
+    showTickerInputError(`Ticker “${normalizeTickerInput(input.value)}” is not cached. Open the list or type a valid symbol.`);
     return;
   }
+  closeTickerPicker();
+  releaseMobileInputZoom();
   navigateTicker(sym);
 }
 
@@ -276,6 +308,7 @@ function bindTickerInput() {
   input?.addEventListener("blur", () => {
     const sym = findCachedTicker(input.value);
     if (sym) input.value = sym;
+    window.setTimeout(releaseMobileInputZoom, 80);
   });
 }
 
@@ -6208,7 +6241,7 @@ async function init() {
   bindMainNav();
   bindValuationNav();
   bindMobileShell();
-  bindTickerBrowser();
+  bindTickerPicker();
   bindTickerInput();
 
   await fetchReadyTickers();
@@ -6225,6 +6258,8 @@ async function init() {
 async function navigateTicker(ticker) {
   const sym = resolveTicker(ticker);
   if (!READY_TICKERS.includes(sym)) return;
+  closeTickerPicker();
+  releaseMobileInputZoom();
   const params = new URLSearchParams();
   if (sym !== "MSFT") params.set("ticker", sym);
   const qs = params.toString();

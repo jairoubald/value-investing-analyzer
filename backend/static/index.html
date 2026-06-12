@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>THESIS · ONE-PAGER</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="/static/thesis.css?v=62" />
+    <link rel="stylesheet" href="/static/thesis.css?v=63" />
   </head>
   <body>
     <div class="bb-terminal">
@@ -14,20 +14,62 @@
         <span class="bb-fx" id="bb-fx">US $</span>
         <div class="bb-ticker-lookup">
           <label class="bb-lookup-label" for="ticker-input">TICKER</label>
-          <input
-            id="ticker-input"
-            class="bb-ticker-input"
-            type="text"
-            value="MSFT"
-            maxlength="12"
-            spellcheck="false"
-            autocapitalize="characters"
-            autocomplete="off"
-            list="ticker-datalist"
-            aria-label="Enter or search ticker"
-          />
-          <datalist id="ticker-datalist"></datalist>
-          <button type="button" id="ticker-browse" class="bb-ticker-browse" aria-haspopup="dialog">ALL</button>
+          <div class="bb-ticker-combobox">
+            <input
+              id="ticker-input"
+              class="bb-ticker-input"
+              type="text"
+              value="MSFT"
+              maxlength="12"
+              spellcheck="false"
+              autocapitalize="characters"
+              autocomplete="off"
+              aria-label="Enter ticker"
+              aria-controls="ticker-picker-panel"
+              aria-expanded="false"
+            />
+            <button
+              type="button"
+              id="ticker-picker-toggle"
+              class="bb-ticker-chevron"
+              aria-label="Open company list"
+              aria-controls="ticker-picker-panel"
+              aria-expanded="false"
+            >
+              ▾
+            </button>
+            <div id="ticker-picker" class="ticker-picker" hidden aria-hidden="true">
+              <div class="ticker-picker-backdrop" data-close-ticker-picker tabindex="-1"></div>
+              <div
+                id="ticker-picker-panel"
+                class="ticker-picker-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="ticker-picker-title"
+              >
+                <div class="ticker-picker-head">
+                  <div class="ticker-picker-head-main">
+                    <span class="bb-key">TK</span>
+                    <h2 id="ticker-picker-title" class="ticker-picker-title">Companies</h2>
+                    <span id="ticker-picker-count" class="ticker-picker-count">—</span>
+                  </div>
+                  <button type="button" class="ticker-picker-close" data-close-ticker-picker aria-label="Close">×</button>
+                </div>
+                <div class="ticker-picker-search-row">
+                  <input
+                    id="ticker-picker-search"
+                    class="ticker-picker-search"
+                    type="search"
+                    enterkeyhint="search"
+                    placeholder="Type ticker or company name…"
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                </div>
+                <div id="ticker-picker-list" class="ticker-picker-list" role="listbox" aria-label="Available companies"></div>
+              </div>
+            </div>
+          </div>
           <button type="button" id="ticker-go" class="bb-ticker-go">GO</button>
         </div>
         <span class="bb-spacer"></span>
@@ -190,36 +232,6 @@
         <span id="bb-clock" class="bb-status-item bb-dim"></span>
       </footer>
     </div>
-
-    <div id="ticker-browser" class="ticker-browser" hidden aria-hidden="true">
-      <div class="ticker-browser-backdrop" data-close-ticker-browser></div>
-      <div
-        class="ticker-browser-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="ticker-browser-title"
-      >
-        <div class="ticker-browser-head">
-          <div class="ticker-browser-head-main">
-            <span class="bb-key">TK</span>
-            <h2 id="ticker-browser-title" class="ticker-browser-title">Companies</h2>
-            <span id="ticker-browser-count" class="ticker-browser-count">—</span>
-          </div>
-          <button type="button" class="ticker-browser-close" data-close-ticker-browser aria-label="Close">×</button>
-        </div>
-        <div class="ticker-browser-search-row">
-          <input
-            id="ticker-browser-search"
-            class="ticker-browser-search"
-            type="search"
-            placeholder="Type ticker or company name…"
-            autocomplete="off"
-            spellcheck="false"
-          />
-        </div>
-        <div id="ticker-browser-list" class="ticker-browser-list" role="listbox" aria-label="Available companies"></div>
-      </div>
-    </div>
-    <script src="/static/thesis.js?v=103"></script>
+    <script src="/static/thesis.js?v=104"></script>
   </body>
 </html>
