@@ -86,12 +86,36 @@ function renderMetricLabelHtml(block, metric) {
   return `${label}<span class="metric-flow-sign ${flowSignClass(sign)}">${tag}</span>`;
 }
 
-if (typeof Chart !== "undefined") {
+let chartJsPromise = null;
+
+function applyChartDefaults() {
+  if (typeof Chart === "undefined") return;
   Chart.defaults.color = BB.amber;
   Chart.defaults.borderColor = BB.grid;
   Chart.defaults.backgroundColor = BB.bg;
   Chart.defaults.font.family = "Consolas, Courier New, monospace";
   Chart.defaults.font.size = 10;
+}
+
+function ensureChartJs() {
+  if (typeof Chart !== "undefined") {
+    applyChartDefaults();
+    return Promise.resolve();
+  }
+  if (!chartJsPromise) {
+    chartJsPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js";
+      script.async = true;
+      script.onload = () => {
+        applyChartDefaults();
+        resolve();
+      };
+      script.onerror = () => reject(new Error("Chart.js failed to load"));
+      document.head.appendChild(script);
+    });
+  }
+  return chartJsPromise;
 }
 
 let READY_TICKERS = ["MSFT", "AAPL", "NVDA", "GOOGL", "AMZN"];
@@ -181,6 +205,7 @@ function setTickerPickerOpen(open) {
 
 function openTickerPicker() {
   setTickerPickerOpen(true);
+  fetchTickerCatalog().catch(() => {});
 }
 
 function closeTickerPicker() {
@@ -194,9 +219,10 @@ function toggleTickerPicker() {
   else closeTickerPicker();
 }
 
-async function fetchReadyTickers() {
+async function fetchReadyTickers({ catalog = false } = {}) {
   try {
-    const res = await fetch("/api/tickers");
+    const url = catalog ? "/api/tickers?catalog=1" : "/api/tickers";
+    const res = await fetch(url);
     if (!res.ok) return READY_TICKERS;
     const data = await res.json();
     if (Array.isArray(data.ready) && data.ready.length) {
@@ -210,18 +236,26 @@ async function fetchReadyTickers() {
           market_cap_label: String(row.market_cap_label || "").trim(),
         }))
         .filter((row) => row.ticker);
-    } else {
+    } else if (catalog) {
       TICKER_CATALOG = READY_TICKERS.map((t) => ({ ticker: t, company: t }));
     }
   } catch {
-    TICKER_CATALOG = READY_TICKERS.map((t) => ({ ticker: t, company: t }));
+    if (catalog) TICKER_CATALOG = READY_TICKERS.map((t) => ({ ticker: t, company: t }));
   }
   const note = document.getElementById("sidebar-ticker-note");
   if (note) note.textContent = `${READY_TICKERS.length} companies · cached · instant`;
   const countEl = document.getElementById("ticker-picker-count");
   if (countEl) countEl.textContent = `${READY_TICKERS.length} ready`;
-  renderTickerPickerList("");
+  if (catalog || TICKER_CATALOG.length) renderTickerPickerList(document.getElementById("ticker-picker-search")?.value || "");
   return READY_TICKERS;
+}
+
+async function fetchTickerCatalog() {
+  if (TICKER_CATALOG.length >= READY_TICKERS.length && TICKER_CATALOG.length > 5) {
+    return TICKER_CATALOG;
+  }
+  await fetchReadyTickers({ catalog: true });
+  return TICKER_CATALOG;
 }
 
 function bindTickerPicker() {
@@ -449,6 +483,10 @@ function setDomain(domain, { updateUrl = true } = {}) {
 
   if (updateUrl) updateDomainUrl(domain);
 
+  if (domain !== "one-pager" && currentThesisData) {
+    ensureHeavySectionsRendered(currentThesisData);
+  }
+
   if (domain === "valuation" && valuationFlowChart) {
     requestAnimationFrame(() => syncValuationFlowFooter(valuationFlowChart));
   }
@@ -493,11 +531,15 @@ function bindMobileShell() {
     if (!btn) return;
     const go = btn.dataset.mobileGo;
     if (go === "fundamentals") {
-      setDomain("fundamentals");
-      applyMobileFundamentalsDefaults();
+      ensureHeavySectionsRendered(currentThesisData).then(() => {
+        setDomain("fundamentals");
+        applyMobileFundamentalsDefaults();
+      });
     } else if (go === "valuation") {
-      setValuationMethod("dcf1");
-      setDomain("valuation");
+      ensureHeavySectionsRendered(currentThesisData).then(() => {
+        setValuationMethod("dcf1");
+        setDomain("valuation");
+      });
     }
   });
   window.matchMedia("(max-width: 900px)").addEventListener("change", () => {
@@ -1604,7 +1646,7 @@ function buildMobileOnePagerHubHtml(data) {
           <span class="op-mobile-trade-sub">Graphs · Magic Numbers</span>
         </button>
         <button type="button" class="op-mobile-btn op-mobile-btn-vl op-mobile-trade-btn op-mobile-trade-sell" data-mobile-go="valuation">
-          <span class="op-mobile-trade-label">VALUATION</span>
+          <span class="op-mobile-trade-label">VALUATIONS</span>
           <span class="op-mobile-trade-sub">DCF · Multiples · Consensus</span>
         </button>
       </div>
@@ -1757,6 +1799,46 @@ function tickClock() {
 }
 
 let currentThesisData = null;
+let heavySectionsTicker = null;
+let heavySectionsDone = false;
+let heavyRenderPromise = null;
+
+function scheduleHeavySectionsRender(data) {
+  const run = () => ensureHeavySectionsRendered(data);
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(run, { timeout: 2500 });
+  } else {
+    setTimeout(run, 80);
+  }
+}
+
+function ensureHeavySectionsRendered(data) {
+  if (!data) return Promise.resolve();
+  const sym = String(data.ticker || "").toUpperCase();
+  if (heavySectionsDone && heavySectionsTicker === sym) return Promise.resolve();
+  if (heavyRenderPromise) return heavyRenderPromise;
+  heavyRenderPromise = ensureChartJs()
+    .then(() => {
+      renderCharts(data);
+      renderBlocks(data.blocks, data.currency, data.units);
+      renderValuation(data);
+      renderMultiplesValuation(data);
+      renderConsensusValuation(data);
+      if (currentDomain === "valuation") setValuationMethod(currentValuationMethod);
+      setupMobileFundamentalsNav(data);
+      setupMobileMagicNav(data.blocks);
+      setupMobileValuationNav();
+      setupMobileChartCarousels();
+      syncMobileMagicLabelColumn();
+      heavySectionsDone = true;
+      heavySectionsTicker = sym;
+    })
+    .catch((err) => console.error("Heavy sections render failed:", err))
+    .finally(() => {
+      heavyRenderPromise = null;
+    });
+  return heavyRenderPromise;
+}
 let valuationFlowChart = null;
 let valuationState = null;
 let multiplesPeChart = null;
@@ -6243,15 +6325,16 @@ async function init() {
   bindTickerPicker();
   bindTickerInput();
 
-  await fetchReadyTickers();
-
   const { ticker: urlTicker, domain, valMethod, fundSection } = getUrlParams();
   setTickerInputValue(urlTicker);
   setDomain(domain, { updateUrl: false });
   if (domain === "valuation") setValuationMethod(valMethod);
   syncMobileChrome();
 
-  await loadAndRender(urlTicker);
+  const tickersPromise = fetchReadyTickers({ catalog: false });
+  const renderPromise = loadAndRender(urlTicker);
+  await renderPromise;
+  tickersPromise.catch(() => {});
 }
 
 async function navigateTicker(ticker) {
@@ -6285,14 +6368,19 @@ async function loadAndRender(ticker) {
   try {
     const data = await loadThesis(ticker);
     currentThesisData = data;
+    heavySectionsDone = false;
+    heavySectionsTicker = null;
     renderHeader(data);
     renderOnePager(data);
     renderNav(data.blocks, data);
-    renderCharts(data);
-    renderBlocks(data.blocks, data.currency, data.units);
-    renderValuation(data);
-    renderMultiplesValuation(data);
-    renderConsensusValuation(data);
+
+    const mobileOnePagerFirst = isMobileLayout() && currentDomain === "one-pager";
+    if (mobileOnePagerFirst) {
+      scheduleHeavySectionsRender(data);
+    } else {
+      await ensureHeavySectionsRendered(data);
+    }
+
     if (currentDomain === "valuation") setValuationMethod(currentValuationMethod);
     setDomain(currentDomain, { updateUrl: false });
     const { fundSection, chartSection } = getUrlParams();
@@ -6312,11 +6400,6 @@ async function loadAndRender(ticker) {
         applyFundamentalsDefaults();
       }
     }
-    setupMobileFundamentalsNav(data);
-    setupMobileMagicNav(data.blocks);
-    setupMobileValuationNav();
-    setupMobileChartCarousels();
-    syncMobileMagicLabelColumn();
     syncMobileChrome();
     if (sourceStatus) {
       const src = data.source || "preload";

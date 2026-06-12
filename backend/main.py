@@ -1,13 +1,14 @@
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from services.data_cache import is_ticker_ready, list_ready_tickers, list_ticker_catalog, load_cached
+from services.data_cache import is_ticker_ready, list_ready_tickers, list_ticker_catalog, load_cached, warm_ticker_catalog
 from services.magic_numbers import DataSheet, compute_magic_numbers, enrich_payload_consensus, enrich_payload_multiples
 from services.one_pager import enrich_payload_profile
 from services.pipeline_status import pipeline_status
@@ -19,7 +20,14 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 load_dotenv(Path(__file__).parent / ".env")
 
-app = FastAPI(title="Financial Thesis Tool")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    warm_ticker_catalog()
+    yield
+
+
+app = FastAPI(title="Financial Thesis Tool", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,15 +58,17 @@ def health():
 
 
 @app.get("/api/tickers")
-def tickers():
+def tickers(catalog: int = Query(0, ge=0, le=1)):
     ready = list_ready_tickers()
-    return {
+    out: dict = {
         "ready": ready,
         "count": len(ready),
         "featured": list(TOP_US_TICKERS),
-        "catalog": list_ticker_catalog(),
         "sort": "top_20_market_cap_then_alpha",
     }
+    if catalog:
+        out["catalog"] = list_ticker_catalog()
+    return out
 
 
 @app.get("/api/pipeline/status")
