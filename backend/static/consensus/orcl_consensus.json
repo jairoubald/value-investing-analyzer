@@ -1,6 +1,16 @@
 {
   "ticker": "ORCL",
   "analyst_consensus": {
-    "error": "Analyst price targets unavailable. Requires FMP price-target-consensus or Yahoo Finance fallback."
+    "low": 155.0,
+    "high": 400.0,
+    "median": 245.0,
+    "mean": 255.95,
+    "analyst_count": 39,
+    "source": "yahoo",
+    "horizon": "12_month_forward",
+    "horizon_label": "12-month forward analyst price targets (not intrinsic value today)",
+    "as_of": "2026-06-12",
+    "source_note": "Yahoo Finance \u00b7 aggregated analyst targets (unofficial feed).",
+    "summary": {}
   }
 }

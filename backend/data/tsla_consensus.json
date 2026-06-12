@@ -1,6 +1,16 @@
 {
   "ticker": "TSLA",
   "analyst_consensus": {
-    "error": "Analyst price targets unavailable. Requires FMP price-target-consensus or Yahoo Finance fallback."
+    "low": 123.0,
+    "high": 600.0,
+    "median": 460.0,
+    "mean": 419.94,
+    "analyst_count": 41,
+    "source": "yahoo",
+    "horizon": "12_month_forward",
+    "horizon_label": "12-month forward analyst price targets (not intrinsic value today)",
+    "as_of": "2026-06-12",
+    "source_note": "Yahoo Finance \u00b7 aggregated analyst targets (unofficial feed).",
+    "summary": {}
   }
 }

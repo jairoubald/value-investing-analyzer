@@ -425,6 +425,27 @@ def build_multiples_series_from_fmp_rows(
     )
 
 
+def _fetch_prices_yfinance(symbol: str, *, years: int = 10) -> list[dict[str, Any]]:
+    try:
+        import yfinance as yf
+    except ImportError as exc:
+        raise FMPError("yfinance not installed") from exc
+
+    sym = symbol.upper().replace(".", "-")
+    end = date.today()
+    start = _subtract_months(end, years * 12)
+    hist = yf.Ticker(sym).history(start=start.isoformat(), end=end.isoformat(), auto_adjust=False)
+    rows: list[dict[str, Any]] = []
+    for idx, row in hist.iterrows():
+        close = row.get("Close")
+        if close is None:
+            continue
+        rows.append({"date": idx.strftime("%Y-%m-%d"), "close": float(close)})
+    if not rows:
+        raise FMPError(f"No Yahoo price history for {symbol}")
+    return rows
+
+
 def fetch_and_build_multiples_series(
     symbol: str,
     *,
@@ -433,7 +454,14 @@ def fetch_and_build_multiples_series(
 ) -> dict[str, Any]:
     """Live FMP fetch — requires FMP_API_KEY for prices; fundamentals may come from EDGAR grid."""
     sym = symbol.upper()
-    price_rows = fetch_historical_prices_eod(sym, years=years)
+    price_rows: list[dict[str, Any]] = []
+    try:
+        price_rows = fetch_historical_prices_eod(sym, years=years)
+    except FMPError:
+        try:
+            price_rows = _fetch_prices_yfinance(sym, years=years)
+        except Exception as exc:
+            raise FMPError(f"Price history unavailable for {sym}: {exc}") from exc
 
     income_q: list[dict[str, Any]] = []
     metrics_q: list[dict[str, Any]] = []

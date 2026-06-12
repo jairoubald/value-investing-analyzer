@@ -1,6 +1,16 @@
 {
   "ticker": "XOM",
   "analyst_consensus": {
-    "error": "Analyst price targets unavailable. Requires FMP price-target-consensus or Yahoo Finance fallback."
+    "low": 130.0,
+    "high": 185.0,
+    "median": 172.5,
+    "mean": 169.91,
+    "analyst_count": 22,
+    "source": "yahoo",
+    "horizon": "12_month_forward",
+    "horizon_label": "12-month forward analyst price targets (not intrinsic value today)",
+    "as_of": "2026-06-12",
+    "source_note": "Yahoo Finance \u00b7 aggregated analyst targets (unofficial feed).",
+    "summary": {}
   }
 }

@@ -3153,15 +3153,19 @@ tbody tr:hover td:first-child {
     width: var(--mobile-mn-col-w, 120px);
   }
 
+  .layout-mobile #fundamentals-data-panel .magic-table.mn-table-wide .mn-col-label {
+    width: var(--mobile-mn-col-w-wide, var(--mobile-mn-col-w, 140px));
+  }
+
   .layout-mobile #fundamentals-data-panel .magic-table .mn-col-year {
     width: 72px;
   }
 
   .layout-mobile #fundamentals-data-panel .magic-table th:first-child,
   .layout-mobile #fundamentals-data-panel .magic-table td:first-child {
-    position: static;
-    left: auto;
-    z-index: auto;
+    position: sticky;
+    left: 0;
+    z-index: 2;
     width: var(--mobile-mn-col-w, 120px);
     min-width: var(--mobile-mn-col-w, 120px);
     max-width: var(--mobile-mn-col-w, 120px);
@@ -3172,6 +3176,24 @@ tbody tr:hover td:first-child {
     line-height: 1.25;
     overflow-wrap: break-word;
     vertical-align: top;
+    background: var(--bb-black);
+    box-shadow: 2px 0 0 rgba(0, 0, 0, 0.35);
+  }
+
+  .layout-mobile #fundamentals-data-panel .magic-table.mn-table-wide th:first-child,
+  .layout-mobile #fundamentals-data-panel .magic-table.mn-table-wide td:first-child {
+    width: var(--mobile-mn-col-w-wide, var(--mobile-mn-col-w, 140px));
+    min-width: var(--mobile-mn-col-w-wide, var(--mobile-mn-col-w, 140px));
+    max-width: var(--mobile-mn-col-w-wide, var(--mobile-mn-col-w, 140px));
+  }
+
+  .layout-mobile #fundamentals-data-panel .magic-table tbody tr:nth-child(even) td:first-child {
+    background: var(--bb-bg);
+  }
+
+  .layout-mobile #fundamentals-data-panel .magic-table thead th.corner-cell {
+    z-index: 3;
+    background: var(--bb-panel-2) !important;
   }
 
   .layout-mobile #fundamentals-data-panel .magic-table th:not(:first-child),

@@ -379,6 +379,66 @@ function getUrlParams() {
 let currentValuationMethod = "dcf1";
 let currentDomain = "one-pager";
 
+function captureNavState() {
+  const { fundSection, chartSection } = getUrlParams();
+  return {
+    domain: currentDomain,
+    valMethod: currentValuationMethod,
+    fundSection,
+    chartSection,
+    mobileChartSection: mobileActiveChartSection,
+  };
+}
+
+function navHashForState(state) {
+  if (state.domain === "valuation") {
+    if (state.valMethod === "multiples") return "#valuation-multiples";
+    if (state.valMethod === "consensus") return "#valuation-consensus";
+    return "#valuation";
+  }
+  if (state.domain === "fundamentals") {
+    if (state.chartSection != null && !Number.isNaN(state.chartSection)) {
+      return `#chart-${state.chartSection}`;
+    }
+    if (state.fundSection != null && !Number.isNaN(state.fundSection)) {
+      return `#block-${state.fundSection}`;
+    }
+    return "#fundamentals";
+  }
+  return "#one-pager";
+}
+
+function syncNavUrl(ticker, state) {
+  const sym = resolveTicker(ticker);
+  const params = new URLSearchParams();
+  if (sym !== "MSFT") params.set("ticker", sym);
+  const qs = params.toString();
+  const hash = navHashForState(state);
+  window.history.replaceState({}, "", `${qs ? `?${qs}` : "/"}${hash}`);
+}
+
+function restoreFundamentalsSection(state) {
+  if (state.domain !== "fundamentals") return;
+  if (isMobileLayout()) {
+    if (state.chartSection != null && !Number.isNaN(state.chartSection)) {
+      mobileActiveChartSection = state.chartSection;
+    } else if (state.mobileChartSection != null && !Number.isNaN(state.mobileChartSection)) {
+      mobileActiveChartSection = state.mobileChartSection;
+    }
+    applyMobileFundamentalsDefaults();
+    return;
+  }
+  if (state.fundSection != null && !Number.isNaN(state.fundSection)) {
+    collapseAllBlocksExcept(state.fundSection);
+    syncFundamentalsNavActive({ block: state.fundSection });
+  } else if (state.chartSection != null && !Number.isNaN(state.chartSection)) {
+    collapseAllChartSectionsExcept(state.chartSection);
+    syncFundamentalsNavActive({ chart: state.chartSection });
+  } else {
+    applyFundamentalsDefaults();
+  }
+}
+
 const DOMAIN_LABELS = {
   "one-pager": "One-Pager",
   valuation: "Valuation",
@@ -763,6 +823,7 @@ function syncMobileValuationNav() {
 function syncMobileMagicLabelColumn() {
   if (!isMobileLayout()) {
     document.documentElement.style.removeProperty("--mobile-mn-col-w");
+    document.documentElement.style.removeProperty("--mobile-mn-col-w-wide");
     return;
   }
   const panel = document.getElementById("fundamentals-data-panel");
@@ -772,16 +833,34 @@ function syncMobileMagicLabelColumn() {
   probe.className = "mobile-mn-probe";
   document.body.appendChild(probe);
 
-  let maxW = 0;
-  panel.querySelectorAll(".magic-table td:first-child").forEach((cell) => {
-    probe.textContent = cell.textContent.replace(/\s+/g, " ").trim();
-    maxW = Math.max(maxW, probe.offsetWidth);
+  const standardCells = [];
+  const wideCells = [];
+  panel.querySelectorAll(".magic-table").forEach((table) => {
+    const bucket = table.classList.contains("mn-table-wide") ? wideCells : standardCells;
+    table.querySelectorAll("tbody td:first-child, thead th.corner-cell").forEach((cell) => bucket.push(cell));
   });
-  probe.remove();
+
+  const measure = (cells) => {
+    let maxW = 0;
+    cells.forEach((cell) => {
+      probe.textContent = cell.textContent.replace(/\s+/g, " ").trim();
+      maxW = Math.max(maxW, probe.offsetWidth);
+    });
+    return maxW;
+  };
 
   const panelW = panel.clientWidth || window.innerWidth;
-  const px = Math.min(Math.max(maxW + 24, 96), Math.round(panelW * 0.46));
-  document.documentElement.style.setProperty("--mobile-mn-col-w", `${px}px`);
+  const stdMax = measure(standardCells);
+  const wideMax = wideCells.length ? measure(wideCells) : 0;
+  probe.remove();
+
+  const stdPx = Math.min(Math.max(stdMax + 24, 104), Math.round(panelW * 0.42));
+  const widePx = wideMax
+    ? Math.min(Math.max(wideMax + 24, stdPx + 16), Math.round(panelW * 0.52))
+    : stdPx;
+
+  document.documentElement.style.setProperty("--mobile-mn-col-w", `${stdPx}px`);
+  document.documentElement.style.setProperty("--mobile-mn-col-w-wide", `${widePx}px`);
 }
 
 function setupMobileMagicNav(blocks) {
@@ -1042,9 +1121,12 @@ function renderTable(block, metrics, currency, units) {
     })
     .join("");
 
+  const wideTable = /balance sheet|% of assets/i.test(block.name || "");
+  const tableClass = `magic-table mode-${barMode}${wideTable ? " mn-table-wide" : ""}`;
+
   return `
     <div class="table-wrap">
-      <table class="magic-table mode-${barMode}">
+      <table class="${tableClass}">
         <colgroup>
           <col class="mn-col-label" />
           ${years.map(() => `<col class="mn-col-year" />`).join("")}
@@ -6343,30 +6425,23 @@ async function init() {
 async function navigateTicker(ticker) {
   const sym = resolveTicker(ticker);
   if (!READY_TICKERS.includes(sym)) return;
+  const navState = captureNavState();
   closeTickerPicker();
   releaseMobileInputZoom();
-  const params = new URLSearchParams();
-  if (sym !== "MSFT") params.set("ticker", sym);
-  const qs = params.toString();
-  const hash =
-    currentDomain === "valuation"
-      ? currentValuationMethod === "multiples"
-        ? "#valuation-multiples"
-        : currentValuationMethod === "consensus"
-          ? "#valuation-consensus"
-          : "#valuation"
-      : currentDomain === "fundamentals"
-        ? "#fundamentals"
-        : "#one-pager";
-  window.history.replaceState({}, "", `${qs ? `?${qs}` : "/"}${hash}`);
+  syncNavUrl(sym, navState);
   setTickerInputValue(sym);
-  await loadAndRender(sym);
+  setDomain(navState.domain, { updateUrl: false });
+  if (navState.domain === "valuation") setValuationMethod(navState.valMethod);
+  syncMobileChrome();
+  await loadAndRender(sym, { navState });
 }
 
-async function loadAndRender(ticker) {
+async function loadAndRender(ticker, { navState } = {}) {
   const nameEl = document.getElementById("company-name");
   const metaEl = document.getElementById("company-meta");
   const sourceStatus = document.getElementById("bb-source-status");
+  const state = navState || captureNavState();
+  const targetDomain = state.domain || currentDomain;
 
   try {
     const data = await loadThesis(ticker);
@@ -6377,32 +6452,16 @@ async function loadAndRender(ticker) {
     renderOnePager(data);
     renderNav(data.blocks, data);
 
-    const mobileOnePagerFirst = isMobileLayout() && currentDomain === "one-pager";
+    const mobileOnePagerFirst = isMobileLayout() && targetDomain === "one-pager";
     if (mobileOnePagerFirst) {
       scheduleHeavySectionsRender(data);
     } else {
       await ensureHeavySectionsRendered(data);
     }
 
-    if (currentDomain === "valuation") setValuationMethod(currentValuationMethod);
-    setDomain(currentDomain, { updateUrl: false });
-    const { fundSection, chartSection } = getUrlParams();
-    if (currentDomain === "fundamentals") {
-      if (isMobileLayout()) {
-        if (chartSection != null && !Number.isNaN(chartSection)) {
-          mobileActiveChartSection = chartSection;
-        }
-        applyMobileFundamentalsDefaults();
-      } else if (fundSection != null && !Number.isNaN(fundSection)) {
-        collapseAllBlocksExcept(fundSection);
-        syncFundamentalsNavActive({ block: fundSection });
-      } else if (chartSection != null && !Number.isNaN(chartSection)) {
-        collapseAllChartSectionsExcept(chartSection);
-        syncFundamentalsNavActive({ chart: chartSection });
-      } else {
-        applyFundamentalsDefaults();
-      }
-    }
+    setDomain(targetDomain, { updateUrl: false });
+    if (targetDomain === "valuation") setValuationMethod(state.valMethod || currentValuationMethod);
+    restoreFundamentalsSection(state);
     syncMobileChrome();
     if (sourceStatus) {
       const src = data.source || "preload";
