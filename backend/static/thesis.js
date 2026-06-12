@@ -240,11 +240,14 @@ function setDomain(domain, { updateUrl = true } = {}) {
     ensurePbvChartsVisible();
   }
 
-  if (isMobileLayout() && domain === "valuation" && currentValuationMethod !== "dcf1") {
-    setValuationMethod("dcf1");
+  if (isMobileLayout() && domain === "valuation") {
+    setupMobileValuationNav();
+    syncMobileValuationNav();
   }
   syncMobileChrome();
 }
+
+let mobileActiveChartSection = 0;
 
 function isMobileLayout() {
   return window.matchMedia("(max-width: 900px)").matches;
@@ -285,8 +288,10 @@ function bindMobileShell() {
     if (currentThesisData) {
       setupMobileFundamentalsNav(currentThesisData);
       setupMobileMagicNav(currentThesisData.blocks);
+      setupMobileValuationNav();
     }
     setupMobileChartCarousels();
+    syncMobileMagicLabelColumn();
     if (isMobileLayout() && currentDomain === "fundamentals") applyMobileFundamentalsDefaults();
   });
 }
@@ -296,19 +301,32 @@ function applyMobileFundamentalsDefaults() {
     applyFundamentalsDefaults();
     return;
   }
-  expandAllChartSectionsForMobile();
+  setMobileActiveChartSection(mobileActiveChartSection || 0);
   collapseAllBlocksExcept(0);
-  syncFundamentalsNavActive({ chart: 0, block: 0 });
+  syncFundamentalsNavActive({ chart: mobileActiveChartSection, block: 0 });
 }
 
-function expandAllChartSectionsForMobile() {
-  document.querySelectorAll(".chart-section").forEach((section) => {
+function setMobileActiveChartSection(sectionIndex) {
+  if (!isMobileLayout()) return;
+  mobileActiveChartSection = sectionIndex;
+  document.querySelectorAll(".chart-section").forEach((section, i) => {
+    const isActive = i === sectionIndex;
+    section.classList.toggle("mobile-chart-active", isActive);
     const toggle = section.querySelector(".section-toggle");
     const body = section.querySelector(".section-body");
     if (!toggle || !body) return;
-    openCollapsible(toggle, body, false);
-    ensureChartsInBody(body);
+    if (isActive) {
+      openCollapsible(toggle, body, false);
+      ensureChartsInBody(body);
+    } else {
+      closeCollapsible(toggle, body);
+    }
   });
+  document.querySelectorAll("#mobile-fd-nav .mobile-fd-pill").forEach((pill, i) => {
+    pill.classList.toggle("is-active", i === sectionIndex);
+  });
+  teardownMobileChartCarousels();
+  setupMobileChartCarousels();
 }
 
 function teardownMobileChartCarousels() {
@@ -342,7 +360,9 @@ function setupMobileChartCarousels() {
   teardownMobileChartCarousels();
   if (!isMobileLayout()) return;
 
-  document.querySelectorAll(".charts-grid-inner").forEach((track) => {
+  document
+    .querySelectorAll(".chart-section.mobile-chart-active .charts-grid-inner")
+    .forEach((track) => {
     if (track.dataset.carouselBound) return;
     const cards = [...track.querySelectorAll(":scope > .chart-card")];
     if (cards.length <= 2) {
@@ -437,14 +457,73 @@ function setupMobileFundamentalsNav(data) {
   nav.addEventListener("click", (e) => {
     const pill = e.target.closest("[data-scroll-chart]");
     if (!pill) return;
-    const idx = Number(pill.dataset.scrollChart);
-    document.getElementById(`chart-block-${idx}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    nav.querySelectorAll(".mobile-fd-pill").forEach((p) => p.classList.remove("is-active"));
-    pill.classList.add("is-active");
+    setMobileActiveChartSection(Number(pill.dataset.scrollChart));
   });
 
   nav.querySelector(".mobile-fd-pill")?.classList.add("is-active");
   panel.insertBefore(nav, grid);
+}
+
+function setupMobileValuationNav() {
+  const existing = document.getElementById("mobile-val-nav");
+  if (existing) existing.remove();
+  if (!isMobileLayout()) return;
+
+  const main = document.querySelector("#view-valuation .main-valuation");
+  if (!main) return;
+
+  const nav = document.createElement("nav");
+  nav.id = "mobile-val-nav";
+  nav.className = "mobile-val-nav";
+  nav.setAttribute("aria-label", "Valuation methods");
+  nav.innerHTML = `
+    <span class="mobile-val-nav-title">Valuation</span>
+    <div class="mobile-val-nav-tabs">
+      <button type="button" class="mobile-val-tab" data-val-method="dcf1">DCF</button>
+      <button type="button" class="mobile-val-tab" data-val-method="multiples">Multiples</button>
+      <button type="button" class="mobile-val-tab" data-val-method="consensus">Consensus</button>
+    </div>`;
+
+  nav.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-val-method]");
+    if (!tab) return;
+    setValuationMethod(tab.dataset.valMethod);
+    syncMobileValuationNav();
+  });
+
+  main.insertBefore(nav, main.firstElementChild);
+  syncMobileValuationNav();
+}
+
+function syncMobileValuationNav() {
+  document.querySelectorAll("#mobile-val-nav .mobile-val-tab").forEach((tab) => {
+    tab.classList.toggle("is-active", tab.dataset.valMethod === currentValuationMethod);
+  });
+}
+
+function syncMobileMagicLabelColumn() {
+  if (!isMobileLayout()) {
+    document.documentElement.style.removeProperty("--mobile-mn-col-w");
+    return;
+  }
+  const panel = document.getElementById("fundamentals-data-panel");
+  if (!panel) return;
+
+  const probe = document.createElement("span");
+  probe.className = "mobile-mn-probe";
+  document.body.appendChild(probe);
+
+  let maxW = 0;
+  panel.querySelectorAll(".magic-table td:first-child").forEach((cell) => {
+    probe.textContent = cell.textContent.replace(/\s+/g, " ").trim();
+    maxW = Math.max(maxW, probe.offsetWidth);
+  });
+  probe.remove();
+
+  const panelW = panel.clientWidth || window.innerWidth;
+  const px = Math.min(Math.max(maxW + 20, 88), panelW * 0.42);
+  const pct = Math.min(42, Math.max(28, (px / panelW) * 100));
+  document.documentElement.style.setProperty("--mobile-mn-col-w", `${pct.toFixed(1)}%`);
 }
 
 function setupMobileMagicNav(blocks) {
@@ -842,7 +921,12 @@ function bindCollapsibles(root) {
     btn.addEventListener("click", () => {
       const controls = btn.getAttribute("aria-controls");
       const body = controls ? document.getElementById(controls) : btn.nextElementSibling;
-      if (body) toggleCollapsible(btn, body);
+      if (body) {
+        toggleCollapsible(btn, body);
+        if (isMobileLayout() && body.closest("#fundamentals-data-panel")) {
+          requestAnimationFrame(() => syncMobileMagicLabelColumn());
+        }
+      }
     });
   });
 }
@@ -1203,6 +1287,16 @@ function buildMobileOnePagerHubHtml(data) {
         ? fmtPrice(id.price)
         : "";
 
+  const metaChips = [
+    id.sector,
+    id.industry,
+    id.country,
+    id.market_cap_label || fmtOpMcap(null, id.market_cap),
+  ].filter(Boolean);
+  const metaHtml = metaChips.length
+    ? `<div class="op-mobile-meta">${metaChips.map((c) => `<span class="op-mobile-chip">${c}</span>`).join("")}</div>`
+    : "";
+
   const segments = (id.segments || []).slice(0, 5);
   const segmentsHtml = segments.length
     ? `<ul class="op-segments op-mobile-segments">${segments
@@ -1211,6 +1305,12 @@ function buildMobileOnePagerHubHtml(data) {
             `<li><span class="op-seg-name">${s.name}</span><span class="op-seg-pct">${(s.pct * 100).toFixed(0)}%</span></li>`,
         )
         .join("")}</ul>`
+    : "";
+  const divisionsHtml = segmentsHtml
+    ? `<section class="op-mobile-divisions" aria-labelledby="op-mobile-div-title">
+        <h3 class="op-mobile-section-title" id="op-mobile-div-title">Revenue division</h3>
+        ${segmentsHtml}
+      </section>`
     : "";
 
   const metricsHtml = (op.snapshot_metrics || [])
@@ -1259,7 +1359,7 @@ function buildMobileOnePagerHubHtml(data) {
           <span class="op-mobile-ticker">${id.ticker || data.ticker}</span>
         </div>
         ${priceStr ? `<p class="op-mobile-price">${priceStr}</p>` : ""}
-        ${segmentsHtml}
+        ${metaHtml}
       </header>
 
       <section class="op-mobile-valuation" aria-labelledby="op-mobile-val-title">
@@ -1268,6 +1368,7 @@ function buildMobileOnePagerHubHtml(data) {
       </section>
 
       <p class="op-mobile-desc">${shortDesc}</p>
+      ${divisionsHtml}
 
       <div class="op-mobile-body">
         <section class="op-mobile-panel op-mobile-metrics" aria-labelledby="op-mobile-metrics-title">
@@ -4287,6 +4388,7 @@ function setValuationMethod(method) {
   if (currentValuationMethod === "consensus" && currentThesisData) {
     applyConsensusModel(currentThesisData);
   }
+  syncMobileValuationNav();
 }
 
 function bindValuationNav() {
@@ -5909,7 +6011,7 @@ function renderCharts(data) {
 
   bindCollapsibles(grid);
   if (isMobileLayout()) {
-    expandAllChartSectionsForMobile();
+    setMobileActiveChartSection(mobileActiveChartSection);
   } else if (currentDomain === "fundamentals" && getUrlParams().chartSection == null && getUrlParams().fundSection == null) {
     collapseAllChartSectionsExcept(0);
   }
@@ -5979,6 +6081,9 @@ async function loadAndRender(ticker) {
     const { fundSection, chartSection } = getUrlParams();
     if (currentDomain === "fundamentals") {
       if (isMobileLayout()) {
+        if (chartSection != null && !Number.isNaN(chartSection)) {
+          mobileActiveChartSection = chartSection;
+        }
         applyMobileFundamentalsDefaults();
       } else if (fundSection != null && !Number.isNaN(fundSection)) {
         collapseAllBlocksExcept(fundSection);
@@ -5992,7 +6097,9 @@ async function loadAndRender(ticker) {
     }
     setupMobileFundamentalsNav(data);
     setupMobileMagicNav(data.blocks);
+    setupMobileValuationNav();
     setupMobileChartCarousels();
+    syncMobileMagicLabelColumn();
     syncMobileChrome();
     if (sourceStatus) {
       const src = data.source || "preload";
