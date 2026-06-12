@@ -3140,27 +3140,55 @@ tbody tr:hover td:first-child {
   .layout-mobile .tables-panel .table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
 
   .layout-mobile #fundamentals-data-panel .magic-table {
     table-layout: fixed;
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .layout-mobile #fundamentals-data-panel .magic-table .mn-col-label {
+    width: var(--mobile-mn-col-w, 120px);
+  }
+
+  .layout-mobile #fundamentals-data-panel .magic-table .mn-col-year {
+    width: 72px;
   }
 
   .layout-mobile #fundamentals-data-panel .magic-table th:first-child,
   .layout-mobile #fundamentals-data-panel .magic-table td:first-child {
-    width: var(--mobile-mn-col-w, 34%);
-    min-width: var(--mobile-mn-col-w, 34%);
-    max-width: var(--mobile-mn-col-w, 34%);
+    position: static;
+    left: auto;
+    z-index: auto;
+    width: var(--mobile-mn-col-w, 120px);
+    min-width: var(--mobile-mn-col-w, 120px);
+    max-width: var(--mobile-mn-col-w, 120px);
     font-size: 10px;
     padding: 0.2rem 0.35rem;
     box-sizing: border-box;
+    white-space: normal;
+    line-height: 1.25;
+    overflow-wrap: break-word;
+    vertical-align: top;
   }
 
   .layout-mobile #fundamentals-data-panel .magic-table th:not(:first-child),
   .layout-mobile #fundamentals-data-panel .magic-table td:not(:first-child) {
+    position: static;
     min-width: 72px;
     width: 72px;
+    max-width: 72px;
+    box-sizing: border-box;
+    padding: 0.2rem 0.35rem;
+  }
+
+  .layout-mobile #fundamentals-data-panel .metric-flow-sign {
+    display: block;
+    margin-left: 0;
+    margin-top: 0.1rem;
+    white-space: nowrap;
   }
 
   .layout-mobile .mobile-val-nav {

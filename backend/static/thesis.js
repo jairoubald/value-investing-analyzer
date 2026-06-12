@@ -780,9 +780,8 @@ function syncMobileMagicLabelColumn() {
   probe.remove();
 
   const panelW = panel.clientWidth || window.innerWidth;
-  const px = Math.min(Math.max(maxW + 20, 88), panelW * 0.42);
-  const pct = Math.min(42, Math.max(28, (px / panelW) * 100));
-  document.documentElement.style.setProperty("--mobile-mn-col-w", `${pct.toFixed(1)}%`);
+  const px = Math.min(Math.max(maxW + 24, 96), Math.round(panelW * 0.46));
+  document.documentElement.style.setProperty("--mobile-mn-col-w", `${px}px`);
 }
 
 function setupMobileMagicNav(blocks) {
@@ -1046,6 +1045,10 @@ function renderTable(block, metrics, currency, units) {
   return `
     <div class="table-wrap">
       <table class="magic-table mode-${barMode}">
+        <colgroup>
+          <col class="mn-col-label" />
+          ${years.map(() => `<col class="mn-col-year" />`).join("")}
+        </colgroup>
         <thead><tr>${cornerHeader(block, currency, units)}${head}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
