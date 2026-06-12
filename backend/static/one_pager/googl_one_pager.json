@@ -1,0 +1,242 @@
+{
+  "ticker": "GOOGL",
+  "one_pager": {
+    "identity": {
+      "name": "Alphabet Inc.",
+      "ticker": "GOOGL",
+      "price": null,
+      "price_direction": "",
+      "market_cap": 4327181744727.0005,
+      "market_cap_label": "$4.33T",
+      "sector": "Communication Services",
+      "industry": "Internet Content & Information",
+      "country": "US",
+      "currency": "USD",
+      "description": "Alphabet Inc. provides a diverse range of products and digital platforms to consumers across multiple global regions, including North and South America, Europe, the Middle East, Africa, and the Asia-Pacific. The company's operations are organized into three primary divisions: Google Services, Google Cloud, and \"Other Bets.\" The Google Services segment delivers core offerings such as its advertising solutions, the Android operating system, the Chrome browser, and various hardware. It also features popular applications like Gmail, Google Drive, Google Maps, Google Photos, Google Play, Search, and YouTube. This division further handles the sale of applications, in-app purchases, and digital content via the Google Play store, alongside marketing devices such as Fitbit wearables, Google Nest smart home products, Pixel smartphones, and other proprietary hardware. It also provides non-advertising services for YouTube. The Google Cloud segment offers a comprehensive suite of infrastructure, platform, and other cloud computing services for businesses. This includes Google Workspace, a collection of cloud-native collaboration tools for enterprises, featuring applications like Gmail, Docs, Drive, Calendar, and Meet, among other specialized services for corporate clients. Lastly, the \"Other Bets\" segment is engaged in developing and selling health technology and internet services. Established in 1998, Alphabet Inc. maintains its principal executive offices in Mountain View, California.",
+      "segments": [
+        {
+          "name": "Google Search & Other",
+          "revenue": 224532000000.0,
+          "pct": 0.5573781886425245
+        },
+        {
+          "name": "Google Cloud",
+          "revenue": 58705000000.0,
+          "pct": 0.14572927940899025
+        },
+        {
+          "name": "Google Inc.",
+          "revenue": 48030000000.0,
+          "pct": 0.11922966169855723
+        },
+        {
+          "name": "YouTube Advertising Revenue",
+          "revenue": 40367000000.0,
+          "pct": 0.10020703214211242
+        },
+        {
+          "name": "Google Network",
+          "revenue": 29792000000.0,
+          "pct": 0.07395565441023146
+        },
+        {
+          "name": "Other Bets",
+          "revenue": 1537000000.0,
+          "pct": 0.0038154484703452523
+        }
+      ]
+    },
+    "snapshot_metrics": [
+      {
+        "id": "rev_cagr_10y",
+        "label": "Revenue CAGR",
+        "sublabel": "10Y",
+        "value": 0.1830771631182213,
+        "format": "percent"
+      },
+      {
+        "id": "eps_cagr_10y",
+        "label": "EPS CAGR",
+        "sublabel": "10Y",
+        "value": null,
+        "format": "percent"
+      },
+      {
+        "id": "roic",
+        "label": "ROIC",
+        "sublabel": "LTM",
+        "value": 0.24793857261412253,
+        "format": "percent"
+      },
+      {
+        "id": "operating_margin",
+        "label": "Operating margin",
+        "sublabel": "LTM",
+        "value": 0.32032638592380025,
+        "format": "percent"
+      },
+      {
+        "id": "net_debt_ebitda",
+        "label": "Net debt / EBITDA",
+        "sublabel": "LTM",
+        "value": null,
+        "format": "ratio"
+      },
+      {
+        "id": "fcf_margin",
+        "label": "FCF margin",
+        "sublabel": "LTM",
+        "value": 0.18187550268595656,
+        "format": "percent"
+      }
+    ],
+    "scorecards": [
+      {
+        "id": "business_quality",
+        "label": "Business quality",
+        "stars": 4,
+        "max_stars": 5,
+        "criteria": [
+          {
+            "label": "ROIC \u2265 12%",
+            "met": true
+          },
+          {
+            "label": "Operating margin \u2265 15%",
+            "met": true
+          },
+          {
+            "label": "Gross margin \u2265 5Y avg",
+            "met": false
+          },
+          {
+            "label": "FCF margin \u2265 15%",
+            "met": true
+          },
+          {
+            "label": "ROE \u2265 15%",
+            "met": true
+          }
+        ],
+        "methodology": "ROIC, operating margin, gross-margin trend vs 5Y, FCF margin, ROE \u2014 one star each when threshold met."
+      },
+      {
+        "id": "financial_strength",
+        "label": "Financial strength",
+        "stars": 2,
+        "max_stars": 5,
+        "criteria": [
+          {
+            "label": "Leverage (ND/EBITDA \u2264 2\u00d7 or net cash)",
+            "met": false
+          },
+          {
+            "label": "Net cash position",
+            "met": false
+          },
+          {
+            "label": "Current ratio \u2265 1.2",
+            "met": false
+          },
+          {
+            "label": "Interest coverage \u2265 8\u00d7",
+            "met": true
+          },
+          {
+            "label": "Equity / assets \u2265 40%",
+            "met": true
+          }
+        ],
+        "methodology": "Balance-sheet resilience: leverage, coverage, equity buffer."
+      },
+      {
+        "id": "predictability",
+        "label": "Predictability",
+        "stars": 4,
+        "max_stars": 5,
+        "criteria": [
+          {
+            "label": "Revenue CAGR 10Y > 0",
+            "met": true
+          },
+          {
+            "label": "EPS CAGR 10Y > 0",
+            "met": false
+          },
+          {
+            "label": "Margin volatility low (\u03c3 < 5pp)",
+            "met": true
+          },
+          {
+            "label": "Revenue up in 4 of last 5Y",
+            "met": true
+          },
+          {
+            "label": "CFO / NI avg 5Y \u2265 1.0",
+            "met": true
+          }
+        ],
+        "methodology": "Growth consistency, earnings stability, cash conversion reliability."
+      },
+      {
+        "id": "growth",
+        "label": "Growth",
+        "stars": 4,
+        "max_stars": 5,
+        "criteria": [
+          {
+            "label": "Revenue CAGR 10Y \u2265 8%",
+            "met": true
+          },
+          {
+            "label": "EPS CAGR 10Y \u2265 10%",
+            "met": false
+          },
+          {
+            "label": "FCFF CAGR 5Y > 0",
+            "met": true
+          },
+          {
+            "label": "Latest revenue growth \u2265 5%",
+            "met": true
+          },
+          {
+            "label": "Book value growth \u2265 5%",
+            "met": true
+          }
+        ],
+        "methodology": "Top-line, per-share, and FCF compounding vs recent momentum."
+      }
+    ],
+    "valuation_snapshot": {
+      "methods": [
+        {
+          "id": "dcf",
+          "label": "DCF",
+          "price": 287.31
+        },
+        {
+          "id": "pe",
+          "label": "P/E median",
+          "price": 312.49
+        },
+        {
+          "id": "consensus",
+          "label": "Analyst consensus",
+          "price": 420.0
+        }
+      ],
+      "blend_price": 339.93,
+      "method_count": 3
+    }
+  },
+  "market_bar": {
+    "price": null,
+    "ask": null,
+    "prev": null,
+    "pe": null,
+    "pb": null,
+    "direction": "",
+    "fx_label": "US $"
+  }
+}

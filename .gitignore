@@ -6,4 +6,9 @@ __pycache__/
 .env
 .env.*
 !.env.example
+backend/data/*_log.txt
+backend/data/api_check.txt
+backend/data/debug_pe.txt
+backend/data/val_keys.txt
+backend/data/verify_log.txt
 .DS_Store

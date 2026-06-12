@@ -1,0 +1,47 @@
+{
+  "ticker": "GOOGL",
+  "company_profile": {
+    "name": "Alphabet Inc.",
+    "ticker": "GOOGL",
+    "description": "Alphabet Inc. provides a diverse range of products and digital platforms to consumers across multiple global regions, including North and South America, Europe, the Middle East, Africa, and the Asia-Pacific. The company's operations are organized into three primary divisions: Google Services, Google Cloud, and \"Other Bets.\" The Google Services segment delivers core offerings such as its advertising solutions, the Android operating system, the Chrome browser, and various hardware. It also features popular applications like Gmail, Google Drive, Google Maps, Google Photos, Google Play, Search, and YouTube. This division further handles the sale of applications, in-app purchases, and digital content via the Google Play store, alongside marketing devices such as Fitbit wearables, Google Nest smart home products, Pixel smartphones, and other proprietary hardware. It also provides non-advertising services for YouTube. The Google Cloud segment offers a comprehensive suite of infrastructure, platform, and other cloud computing services for businesses. This includes Google Workspace, a collection of cloud-native collaboration tools for enterprises, featuring applications like Gmail, Docs, Drive, Calendar, and Meet, among other specialized services for corporate clients. Lastly, the \"Other Bets\" segment is engaged in developing and selling health technology and internet services. Established in 1998, Alphabet Inc. maintains its principal executive offices in Mountain View, California.",
+    "sector": "Communication Services",
+    "industry": "Internet Content & Information",
+    "country": "US",
+    "exchange": "NASDAQ",
+    "market_cap": 4327181744727.0005,
+    "market_cap_label": null,
+    "segments": [
+      {
+        "name": "Google Search & Other",
+        "revenue": 224532000000.0,
+        "pct": 0.5573781886425245
+      },
+      {
+        "name": "Google Cloud",
+        "revenue": 58705000000.0,
+        "pct": 0.14572927940899025
+      },
+      {
+        "name": "Google Inc.",
+        "revenue": 48030000000.0,
+        "pct": 0.11922966169855723
+      },
+      {
+        "name": "YouTube Advertising Revenue",
+        "revenue": 40367000000.0,
+        "pct": 0.10020703214211242
+      },
+      {
+        "name": "Google Network",
+        "revenue": 29792000000.0,
+        "pct": 0.07395565441023146
+      },
+      {
+        "name": "Other Bets",
+        "revenue": 1537000000.0,
+        "pct": 0.0038154484703452523
+      }
+    ],
+    "source": "fmp"
+  }
+}

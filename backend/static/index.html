@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>THESIS · MAGIC NUMBERS</title>
+    <title>THESIS · ONE-PAGER</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="/static/thesis.css?v=14" />
+    <link rel="stylesheet" href="/static/thesis.css?v=54" />
   </head>
   <body>
     <div class="bb-terminal">
@@ -30,49 +30,152 @@
       <div class="bb-redbar">
         <span class="bb-redbar-item">Thesis Tool</span>
         <span class="bb-redbar-sep">|</span>
-        <span class="bb-redbar-title">Magic Numbers</span>
+        <span class="bb-redbar-title" id="bb-redbar-title">One-Pager</span>
         <span class="bb-spacer"></span>
         <span class="bb-redbar-security" id="bb-redbar-security">MSFT US Equity</span>
       </div>
 
       <div class="app">
         <aside class="sidebar">
-          <div class="bb-panel-head">
-            <span class="bb-key">NAV</span>
-            <span class="bb-panel-title">Sections</span>
-          </div>
           <h1 id="company-name" class="bb-security">Microsoft Corporation</h1>
           <p id="company-meta" class="meta"></p>
-          <nav id="block-nav" class="block-nav"></nav>
+
+          <nav id="main-nav" class="main-nav" aria-label="Main sections">
+            <a href="#one-pager" class="nav-domain-leaf active" data-domain="one-pager">
+              <span class="nav-expand-spacer" aria-hidden="true"></span>
+              <span class="nav-domain-inner">
+                <span class="nav-num">OP</span>
+                <span class="nav-domain-label">One-Pager</span>
+              </span>
+            </a>
+
+            <div class="nav-domain-group" data-domain-group="fundamentals">
+              <div class="nav-domain-row-wrap">
+                <button
+                  type="button"
+                  class="nav-expand-btn"
+                  data-expand-for="fundamentals"
+                  aria-expanded="false"
+                  aria-controls="fundamentals-subnav"
+                  aria-label="Show fundamentals sections"
+                >
+                  +
+                </button>
+                <button type="button" class="nav-domain-btn" data-domain="fundamentals">
+                  <span class="nav-num">FD</span>
+                  <span class="nav-domain-label">Fundamentals</span>
+                </button>
+              </div>
+              <div class="nav-sub" id="fundamentals-subnav" hidden></div>
+            </div>
+
+            <div class="nav-domain-group" data-domain-group="valuation">
+              <div class="nav-domain-row-wrap">
+                <button
+                  type="button"
+                  class="nav-expand-btn"
+                  data-expand-for="valuation"
+                  aria-expanded="false"
+                  aria-controls="valuation-subnav"
+                  aria-label="Show valuation methods"
+                >
+                  +
+                </button>
+                <button type="button" class="nav-domain-btn" data-domain="valuation">
+                  <span class="nav-num">VL</span>
+                  <span class="nav-domain-label">Valuation</span>
+                </button>
+              </div>
+              <div class="nav-sub" id="valuation-subnav" hidden>
+                <a href="#valuation" class="nav-sub-link" data-val-method="dcf1">
+                  <span class="nav-num">M1</span>
+                  <span class="nav-sub-label">DCF · Method 1</span>
+                </a>
+                <a href="#valuation-multiples" class="nav-sub-link" data-val-method="multiples">
+                  <span class="nav-num">M2·3</span>
+                  <span class="nav-sub-label">Multiples · P/E &amp; P/BV</span>
+                </a>
+                <a href="#valuation-consensus" class="nav-sub-link" data-val-method="consensus">
+                  <span class="nav-num">M4</span>
+                  <span class="nav-sub-label">Analyst consensus</span>
+                </a>
+              </div>
+            </div>
+          </nav>
+
           <p class="sidebar-note">5 companies · preloaded · instant</p>
         </aside>
 
-        <main class="main">
-          <section class="charts-panel">
-            <div class="bb-panel-head">
-              <span class="bb-key">GP</span>
-              <span class="bb-panel-title">Graphs</span>
-            </div>
-            <div id="charts-grid" class="charts-grid"></div>
-          </section>
-          <section class="tables-panel">
-            <div class="bb-panel-head">
-              <span class="bb-key">MN</span>
-              <span class="bb-panel-title">Magic Numbers</span>
-            </div>
-            <div id="blocks-container"></div>
-          </section>
-        </main>
+        <div class="workspace-content">
+          <div id="view-one-pager" class="workspace-view active">
+            <main class="main main-one-pager-first">
+              <section class="one-pager-panel" id="one-pager-panel">
+                <div class="bb-panel-head">
+                  <span class="bb-key">OP</span>
+                  <span class="bb-panel-title">One-Pager</span>
+                </div>
+                <div id="one-pager-container"></div>
+              </section>
+            </main>
+          </div>
+
+          <div id="view-fundamentals" class="workspace-view">
+            <main class="main">
+              <section class="charts-panel" id="fundamentals-graphs-panel">
+                <div class="bb-panel-head">
+                  <span class="bb-key">GP</span>
+                  <span class="bb-panel-title">Graphs</span>
+                  <span class="bb-panel-sub">Visual · historical review</span>
+                </div>
+                <div id="charts-grid" class="charts-grid"></div>
+              </section>
+              <section class="tables-panel" id="fundamentals-data-panel">
+                <div class="bb-panel-head">
+                  <span class="bb-key">MN</span>
+                  <span class="bb-panel-title">Magic Numbers</span>
+                  <span class="bb-panel-sub">Data · multi-year tables</span>
+                </div>
+                <div id="blocks-container"></div>
+              </section>
+            </main>
+          </div>
+
+          <div id="view-valuation" class="workspace-view">
+            <main class="main main-valuation">
+              <section class="valuation-panel" id="valuation-panel-dcf">
+                <div class="bb-panel-head">
+                  <span class="bb-key">M1</span>
+                  <span class="bb-panel-title">DCF · Method 1</span>
+                </div>
+                <div id="valuation-container"></div>
+              </section>
+              <section class="valuation-panel hidden" id="valuation-panel-multiples">
+                <div class="bb-panel-head">
+                  <span class="bb-key">M2·3</span>
+                  <span class="bb-panel-title">Valuation by Multiples</span>
+                </div>
+                <div id="valuation-multiples-container"></div>
+              </section>
+              <section class="valuation-panel hidden" id="valuation-panel-consensus">
+                <div class="bb-panel-head">
+                  <span class="bb-key">M4</span>
+                  <span class="bb-panel-title">Analyst consensus</span>
+                </div>
+                <div id="valuation-consensus-container"></div>
+              </section>
+            </main>
+          </div>
+        </div>
       </div>
 
       <footer class="bb-statusbar">
         <span id="bb-source-status" class="bb-status-item">Source: preload</span>
         <span class="bb-sep">|</span>
-        <span class="bb-status-item">Engine: Magic Numbers</span>
+        <span id="bb-engine-status" class="bb-status-item">Engine: Magic Numbers</span>
         <span class="bb-spacer"></span>
         <span id="bb-clock" class="bb-status-item bb-dim"></span>
       </footer>
     </div>
-    <script src="/static/thesis.js?v=20"></script>
+    <script src="/static/thesis.js?v=97"></script>
   </body>
 </html>

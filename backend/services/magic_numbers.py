@@ -5,6 +5,60 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "msft_1data.json"
+DATA_DIR = DEFAULT_DATA_PATH.parent
+
+
+def enrich_payload_multiples(payload: dict[str, Any]) -> dict[str, Any]:
+    """Attach monthly P/E & P/BV series from cache sidecar or live FMP."""
+    if payload.get("multiples_series"):
+        return payload
+
+    out = dict(payload)
+    ticker = str(out.get("ticker") or "MSFT").upper()
+    sidecar = DATA_DIR / f"{ticker.lower()}_multiples.json"
+    if sidecar.is_file():
+        try:
+            side = json.loads(sidecar.read_text(encoding="utf-8"))
+            if side.get("multiples_series"):
+                out["multiples_series"] = side["multiples_series"]
+                return out
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    try:
+        from services.multiples_series import fetch_and_build_multiples_series
+
+        out["multiples_series"] = fetch_and_build_multiples_series(ticker, payload=out)
+    except Exception as exc:
+        out["multiples_series_error"] = str(exc)
+    return out
+
+
+def enrich_payload_consensus(payload: dict[str, Any]) -> dict[str, Any]:
+    """Attach analyst price-target consensus from cache sidecar or live fetch."""
+    if payload.get("analyst_consensus") and not payload["analyst_consensus"].get("error"):
+        return payload
+
+    out = dict(payload)
+    ticker = str(out.get("ticker") or "MSFT").upper()
+    sidecar = DATA_DIR / f"{ticker.lower()}_consensus.json"
+    if sidecar.is_file():
+        try:
+            side = json.loads(sidecar.read_text(encoding="utf-8"))
+            if side.get("analyst_consensus") and not side["analyst_consensus"].get("error"):
+                out["analyst_consensus"] = side["analyst_consensus"]
+                return out
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    try:
+        from services.analyst_consensus import fetch_analyst_consensus
+
+        out["analyst_consensus"] = fetch_analyst_consensus(ticker)
+    except Exception as exc:
+        out["analyst_consensus_error"] = str(exc)
+        out["analyst_consensus"] = {"error": str(exc)}
+    return out
 
 
 class DataSheet:
@@ -20,6 +74,12 @@ class DataSheet:
         self.years = payload["years"]
         self._grid = payload["grid"]
         self.year_cols = [y["col"] for y in self.years]
+        self.multiples_series = payload.get("multiples_series") or {}
+        self.multiples_series_error = payload.get("multiples_series_error")
+        self.analyst_consensus = payload.get("analyst_consensus") or {}
+        self.analyst_consensus_error = payload.get("analyst_consensus_error")
+        self.company_profile = payload.get("company_profile") or {}
+        self.company_profile_error = payload.get("company_profile_error")
 
     def val(self, row: int, col: int) -> float | None:
         row_s = self._grid.get(str(row), {})
@@ -210,7 +270,7 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
     lt_debt_pct = [_safe_div(lt_debt[i], total_debt[i]) for i in range(n)]
 
     acquisitions = _series(data, 222)
-    acq_ni = [_safe_div(-(acquisitions[i] or 0), fcff[i]) if acquisitions[i] is not None and fcff[i] else None for i in range(n)]
+    acq_fcff = [_safe_div(-(acquisitions[i] or 0), fcff[i]) if acquisitions[i] is not None and fcff[i] else None for i in range(n)]
     dividends = _series(data, 231)
     div_fcff = [_safe_div(-(dividends[i] or 0), fcff[i]) if dividends[i] is not None and fcff[i] else None for i in range(n)]
     debt_repay = _series(data, 232)
@@ -281,9 +341,13 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
         as_pct: set[str] | None = None,
         as_ratio: set[str] | None = None,
         display: dict[str, Any] | None = None,
+        flow_signs: dict[str, str] | None = None,
+        labels: dict[str, str] | None = None,
     ):
         as_pct = as_pct or set()
         as_ratio = as_ratio or set()
+        flow_signs = flow_signs or {}
+        labels = labels or {}
 
         def metric_format(key: str) -> str:
             if key in as_pct:
@@ -299,9 +363,10 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
             "metrics": [
                 {
                     "key": key,
-                    "label": key,
+                    "label": labels.get(key, key),
                     "format": metric_format(key),
                     "bar_group": (display or {}).get("bar_groups", {}).get(key),
+                    "flow_sign": flow_signs.get(key),
                     "values": {years[i]: metrics[key][i] for i in range(n)},
                 }
                 for key in metrics
@@ -387,6 +452,26 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
                 "FCFF": fcff,
             },
             display={"bar_mode": "column", "show_unit": True, "collapsible": True},
+            flow_signs={
+                "TOTALREVENUE": "+",
+                "COST OF REVENUES": "-",
+                "GROSS PROFIT": "=",
+                "TOTAL EXPENSES": "-",
+                "EBIT": "=",
+                "INTEREST& OTHER": "-",
+                "EBT": "=",
+                "TAXES": "-",
+                "NET INCOME": "=",
+                "CFO": "+",
+                "-CAPEX": "-",
+                "INTEREST (1-T)": "+",
+                "FCFF": "=",
+            },
+            labels={
+                "TOTALREVENUE": "Total Revenue",
+                "COST OF REVENUES": "Cost of Revenue",
+                "INTEREST& OTHER": "Interest & Other",
+            },
         ),
         block(
             "2 Growth",
@@ -438,14 +523,14 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
                 "Total Debt / Net Income": debt_ni,
                 "ST Debt / Total Debt": st_debt_pct,
                 "LT Debt / Total Debt": lt_debt_pct,
-                "Adquisition / Net Income": acq_ni,
+                "Acquisitions / FCFF": acq_fcff,
                 "Dividend Paid / FCFF": div_fcff,
                 "Repayment Debt/ FCFF": repay_fcff,
             },
             as_pct={"ST Debt / Total Debt", "LT Debt / Total Debt"},
             as_ratio={
                 "Total Debt / Net Income",
-                "Adquisition / Net Income",
+                "Acquisitions / FCFF",
                 "Dividend Paid / FCFF",
                 "Repayment Debt/ FCFF",
             },
@@ -542,6 +627,8 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
         revenue=revenue,
         ebit=ebit,
         net_income=net_income,
+        cfo=cfo,
+        fcff=fcff,
         growth_revenue=growth_revenue,
         growth_net_income=growth_net_income,
         growth_eps=growth_eps,
@@ -553,7 +640,7 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
         ebit_margin=ebit_margin,
         ebt_margin=ebt_margin,
         net_margin=net_margin,
-        wacc=wacc,
+        gross_margin=gross_margin,
         total_equity=total_equity,
         bv_growth=bv_growth,
         equity_pct=equity_pct,
@@ -563,7 +650,7 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
         debt_ni=debt_ni,
         st_debt_pct=st_debt_pct,
         lt_debt_pct=lt_debt_pct,
-        acq_ni=acq_ni,
+        acq_fcff=acq_fcff,
         div_fcff=div_fcff,
         repay_fcff=repay_fcff,
         shares_outstanding=shares_outstanding,
@@ -585,6 +672,12 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
         other_lt_liab=other_lt_liab,
     )
 
+    from services.method_valuation import compute_valuation_bundle
+    from services.one_pager import compute_one_pager
+
+    market_bar = extract_market_bar(data)
+    valuation = compute_valuation_bundle(data)
+
     return {
         "ticker": data.ticker,
         "company": data.company,
@@ -593,10 +686,17 @@ def compute_magic_numbers(data: DataSheet) -> dict[str, Any]:
         "tax_rate": tax_rate,
         "source": data.source,
         "source_provider": data.source_provider,
-        "market_bar": extract_market_bar(data),
+        "market_bar": market_bar,
         "blocks": blocks,
         "chart_sections": chart_payload["sections"],
         "charts_missing_data": chart_payload["missing"],
+        "valuation": valuation,
+        "one_pager": compute_one_pager(
+            data,
+            valuation=valuation,
+            market_bar=market_bar,
+            company_profile=data.company_profile if not data.company_profile.get("error") else None,
+        ),
     }
 
 
@@ -611,25 +711,31 @@ def _chart(
     series: list[dict[str, Any]],
     *,
     stacked: bool = False,
+    grouped: bool = False,
     dual_axis: bool = False,
     format: str = "number",
     missing: list[str],
+    broken_axis: bool | None = None,
 ) -> dict[str, Any]:
     if not any(_series_has_data(s["data"]) for s in series):
         missing.append(title)
-    return {
+    out: dict[str, Any] = {
         "id": chart_id,
         "title": title,
         "type": chart_type,
         "series": series,
         "stacked": stacked,
+        "grouped": grouped,
         "dual_axis": dual_axis,
         "format": format,
     }
+    if broken_axis is not None:
+        out["broken_axis"] = broken_axis
+    return out
 
 
 def build_charts(**kwargs: Any) -> dict[str, Any]:
-    """21 charts in 5 sections — mirrors Excel sheet 3 GRAPHS."""
+    """20 charts in 5 sections — mirrors Excel sheet 3 GRAPHS."""
     missing: list[str] = []
     years: list[str] = kwargs["years"]
 
@@ -638,66 +744,18 @@ def build_charts(**kwargs: Any) -> dict[str, Any]:
 
     sections = [
         {
-            "id": "growth",
-            "title": "1 GROWTH & FLOWS OF VALUE",
-            "charts": [
-                _chart(
-                    "g1-growth-rev-ni-eps",
-                    "Growth Revenue, Net Income, EPS",
-                    "line",
-                    [
-                        s("growth REVENUE", kwargs["growth_revenue"], format="percent"),
-                        s("growth NET INCOME", kwargs["growth_net_income"], format="percent"),
-                        s("growth EPS", kwargs["growth_eps"], format="percent"),
-                    ],
-                    format="percent",
-                    missing=missing,
-                ),
-                _chart(
-                    "g2-net-income",
-                    "Net Income",
-                    "bar",
-                    [s("NET INCOME", kwargs["net_income"])],
-                    missing=missing,
-                ),
-                _chart(
-                    "g3-growth-cfo-fcff",
-                    "Growth CFO, FCFF",
-                    "line",
-                    [
-                        s("growth REVENUE", kwargs["growth_revenue"], format="percent"),
-                        s("growth CFO", kwargs["growth_cfo"], format="percent"),
-                        s("growth FCFF", kwargs["growth_fcff"], format="percent"),
-                    ],
-                    format="percent",
-                    missing=missing,
-                ),
-                _chart(
-                    "g4-flows-of-value",
-                    "Flows of Value",
-                    "line",
-                    [
-                        s("CFO/NI", kwargs["cfo_ni"], format="ratio"),
-                        s("FCFF/NI", kwargs["fcff_ni"], format="ratio"),
-                        s("CAPEX/CFO", kwargs["capex_cfo"], format="ratio"),
-                    ],
-                    format="ratio",
-                    missing=missing,
-                ),
-            ],
-        },
-        {
             "id": "performance",
-            "title": "2 FINANCIAL PERFORMANCE & PROFITABILITY RATIOS",
+            "title": "1 FINANCIAL PERFORMANCE & PROFITABILITY RATIOS",
             "charts": [
                 _chart(
                     "f1-revenues-net-income",
-                    "Revenues, Net Income",
+                    "Sales",
                     "bar",
                     [
-                        s("EBIT", kwargs["ebit"]),
-                        s("NET INCOME", kwargs["net_income"]),
+                        s("REVENUE (L)", kwargs["revenue"]),
+                        s("NET INCOME (R)", kwargs["net_income"], y_axis="y1"),
                     ],
+                    dual_axis=True,
                     missing=missing,
                 ),
                 _chart(
@@ -705,29 +763,33 @@ def build_charts(**kwargs: Any) -> dict[str, Any]:
                     "Profitability",
                     "line",
                     [
+                        s("GROSS marg", kwargs["gross_margin"], format="percent"),
                         s("EBIT marg", kwargs["ebit_margin"], format="percent"),
-                        s("EBT marg", kwargs["ebt_margin"], format="percent"),
                         s("NET margin", kwargs["net_margin"], format="percent"),
                     ],
                     format="percent",
                     missing=missing,
                 ),
                 _chart(
-                    "f3-wacc",
-                    "WACC",
-                    "line",
-                    [s("WACC", kwargs["wacc"], format="percent_points")],
-                    format="percent_points",
+                    "f3-ni-cfo-fcff",
+                    "Cash Generation",
+                    "bar",
+                    [
+                        s("NET INCOME", kwargs["net_income"]),
+                        s("CFO", kwargs["cfo"]),
+                        s("FCFF", kwargs["fcff"]),
+                    ],
+                    grouped=True,
                     missing=missing,
                 ),
                 _chart(
                     "f4-equity-growth",
-                    "Equity $B & growth",
+                    "Equity Accumulation",
                     "bar",
                     [
-                        s("Total Equity", kwargs["total_equity"]),
+                        s("TOTAL EQUITY (L)", kwargs["total_equity"]),
                         s(
-                            "BOOK VALUE Growth",
+                            "BOOK VALUE growth (R)",
                             kwargs["bv_growth"],
                             type="line",
                             format="percent",
@@ -735,6 +797,47 @@ def build_charts(**kwargs: Any) -> dict[str, Any]:
                         ),
                     ],
                     dual_axis=True,
+                    missing=missing,
+                ),
+            ],
+        },
+        {
+            "id": "growth",
+            "title": "2 GROWTH & FLOWS OF VALUE",
+            "charts": [
+                _chart(
+                    "g1-growth-revenue",
+                    "Revenue Growth",
+                    "line",
+                    [s("growth REVENUE", kwargs["growth_revenue"], format="percent")],
+                    format="percent",
+                    missing=missing,
+                ),
+                _chart(
+                    "g2-growth-net-income",
+                    "Growth Net Income",
+                    "line",
+                    [s("growth NET INCOME", kwargs["growth_net_income"], format="percent")],
+                    format="percent",
+                    missing=missing,
+                ),
+                _chart(
+                    "g3-flows-of-value",
+                    "Cash Flow Ratios",
+                    "line",
+                    [
+                        s("CFO/NI", kwargs["cfo_ni"], format="multiple"),
+                        s("FCFF/NI", kwargs["fcff_ni"], format="multiple"),
+                    ],
+                    format="multiple",
+                    missing=missing,
+                ),
+                _chart(
+                    "g4-capex-cfo",
+                    "CapEx Investment",
+                    "line",
+                    [s("CAPEX/CFO", kwargs["capex_cfo"], format="percent")],
+                    format="percent",
                     missing=missing,
                 ),
             ],
@@ -748,9 +851,10 @@ def build_charts(**kwargs: Any) -> dict[str, Any]:
                     "Assets",
                     "bar",
                     [
-                        s("Total Equity", kwargs["equity_pct"], format="percent"),
-                        s("Total Liabilties", kwargs["liabilities_pct"], format="percent"),
+                        s("TOTAL EQUITY", kwargs["equity_pct"], format="percent"),
+                        s("LIABILITIES", kwargs["liabilities_pct"], format="percent"),
                     ],
+                    stacked=True,
                     format="percent",
                     missing=missing,
                 ),
@@ -759,29 +863,30 @@ def build_charts(**kwargs: Any) -> dict[str, Any]:
                     "% of Assets",
                     "line",
                     [
-                        s("Total Current Assets", kwargs["current_assets_pct"], format="percent"),
-                        s("Total Debt/Assets", kwargs["debt_assets_pct"], format="percent"),
+                        s("CURRENT ASSETS / ASSETS", kwargs["current_assets_pct"], format="percent"),
+                        s("TOTAL DEBT / ASSETS", kwargs["debt_assets_pct"], format="percent"),
                     ],
                     format="percent",
                     missing=missing,
                 ),
                 _chart(
-                    "e3-debt-ni",
-                    "Total Debt / Net Income",
-                    "line",
-                    [s("Total Debt / Net Income", kwargs["debt_ni"], format="ratio")],
-                    format="ratio",
-                    missing=missing,
-                ),
-                _chart(
-                    "e4-lt-st-debt",
-                    "LT & ST Debt",
+                    "e3-lt-st-debt",
+                    "Long- and Short-Term Debt",
                     "bar",
                     [
-                        s("ST Debt / Total Debt", kwargs["st_debt_pct"], format="percent"),
-                        s("LT Debt / Total Debt", kwargs["lt_debt_pct"], format="percent"),
+                        s("ST DEBT / TOTAL DEBT", kwargs["st_debt_pct"], format="percent"),
+                        s("LT DEBT / TOTAL DEBT", kwargs["lt_debt_pct"], format="percent"),
                     ],
+                    stacked=True,
                     format="percent",
+                    missing=missing,
+                ),
+                _chart(
+                    "e4-debt-ni",
+                    "Leverage",
+                    "line",
+                    [s("TOTAL DEBT / NET INCOME (x)", kwargs["debt_ni"], format="multiple")],
+                    format="multiple",
                     missing=missing,
                 ),
             ],
@@ -791,34 +896,38 @@ def build_charts(**kwargs: Any) -> dict[str, Any]:
             "title": "4 WHAT DOES IT DO WITH CASH?",
             "charts": [
                 _chart(
-                    "c1-acquisition",
-                    "Adquisition / Net Income",
-                    "bar",
-                    [s("Adquisition / Net Income", kwargs["acq_ni"], format="ratio")],
-                    format="ratio",
-                    missing=missing,
-                ),
-                _chart(
-                    "c2-repay-debt",
-                    "Repayment Debt/ FCFF",
-                    "bar",
-                    [s("Repayment Debt/ FCFF", kwargs["repay_fcff"], format="ratio")],
-                    format="ratio",
-                    missing=missing,
-                ),
-                _chart(
-                    "c3-shares",
-                    "Shares Outstanding",
+                    "c1-shares-outstanding",
+                    "Buybacks",
                     "line",
-                    [s("Shares Outstanding", kwargs["shares_outstanding"])],
+                    [s("SHARES OUTSTANDING", kwargs["shares_outstanding"], format="billions")],
+                    format="billions",
                     missing=missing,
                 ),
                 _chart(
-                    "c4-dividends",
-                    "Dividend Paid / FCFF",
+                    "c2-dividend-fcff",
+                    "Dividend Paid",
                     "bar",
-                    [s("Dividend Paid / FCFF", kwargs["div_fcff"], format="ratio")],
-                    format="ratio",
+                    [s("DIVIDEND PAID / FCFF (x)", kwargs["div_fcff"], format="multiple")],
+                    format="multiple",
+                    broken_axis=True,
+                    missing=missing,
+                ),
+                _chart(
+                    "c3-acquisitions-fcff",
+                    "Acquisitions",
+                    "bar",
+                    [s("ACQUISITIONS / FCFF (%)", kwargs["acq_fcff"], format="percent")],
+                    format="percent",
+                    broken_axis=True,
+                    missing=missing,
+                ),
+                _chart(
+                    "c4-repayment-debt-fcff",
+                    "Repayment Debt",
+                    "bar",
+                    [s("REPAYMENT DEBT / FCFF (%)", kwargs["repay_fcff"], format="percent")],
+                    format="percent",
+                    broken_axis=False,
                     missing=missing,
                 ),
             ],
@@ -861,18 +970,6 @@ def build_charts(**kwargs: Any) -> dict[str, Any]:
                         s("Goodwill", kwargs["goodwill"]),
                         s("other Intangibles", kwargs["intangibles"]),
                         s("LT Investment", kwargs["lt_invest"]),
-                    ],
-                    stacked=True,
-                    missing=missing,
-                ),
-                _chart(
-                    "b4-current-liabilities",
-                    "Current Liabilities",
-                    "bar",
-                    [
-                        s("Payables & Accruals", kwargs["payables"]),
-                        s("ST Debt", kwargs["st_debt"]),
-                        s("Other ST Liabilities", kwargs["other_st_liab"]),
                     ],
                     stacked=True,
                     missing=missing,

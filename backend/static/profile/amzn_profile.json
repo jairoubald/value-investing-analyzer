@@ -1,0 +1,47 @@
+{
+  "ticker": "AMZN",
+  "company_profile": {
+    "name": "Amazon.com, Inc.",
+    "ticker": "AMZN",
+    "description": "Amazon.com, Inc. operates a vast global retail enterprise, distributing consumer goods and subscription services through both its extensive online platforms and a network of physical stores across North America and internationally. Its operations are structured into three primary segments: North America, International, and Amazon Web Services (AWS). The company's product offerings encompass both merchandise and content procured for direct resale, alongside items sold by third-party merchants on its platform. Furthermore, the company develops and markets its own range of electronic devices, such as Kindle e-readers, Fire tablets and TVs, Ring, Blink, eero, and Echo products. It also invests in the development and production of original media content. Amazon provides various programs designed to enable independent sellers to offer their products, and empowers authors, musicians, filmmakers, Twitch streamers, and app developers to publish and commercialize their content. Beyond this, it delivers a comprehensive suite of cloud computing solutions, including compute, storage, database, analytics, and machine learning services through AWS. The company also offers fulfillment services, advertising solutions, and digital content subscriptions. A key offering is Amazon Prime, its exclusive membership program. Amazon caters to a wide array of clientele, including individual consumers, third-party sellers, software developers, enterprise clients, content creators, and advertisers. Incorporated in 1994, Amazon.com, Inc. maintains its headquarters in Seattle, Washington.",
+    "sector": "Consumer Cyclical",
+    "industry": "Specialty Retail",
+    "country": "US",
+    "exchange": "NASDAQ",
+    "market_cap": 2597947221000.0,
+    "market_cap_label": null,
+    "segments": [
+      {
+        "name": "Online Stores",
+        "revenue": 269287000000.0,
+        "pct": 0.37561443053935983
+      },
+      {
+        "name": "Third-Party Seller Services",
+        "revenue": 172162000000.0,
+        "pct": 0.24013981956246408
+      },
+      {
+        "name": "Amazon Web Services",
+        "revenue": 128725000000.0,
+        "pct": 0.17955180744402474
+      },
+      {
+        "name": "Advertising Services",
+        "revenue": 68635000000.0,
+        "pct": 0.09573539175700632
+      },
+      {
+        "name": "Subscription Services",
+        "revenue": 49619000000.0,
+        "pct": 0.06921096238931881
+      },
+      {
+        "name": "Physical Stores",
+        "revenue": 22561000000.0,
+        "pct": 0.03146916549034486
+      }
+    ],
+    "source": "fmp"
+  }
+}

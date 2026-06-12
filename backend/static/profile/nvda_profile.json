@@ -1,0 +1,42 @@
+{
+  "ticker": "NVDA",
+  "company_profile": {
+    "name": "NVIDIA Corporation",
+    "ticker": "NVDA",
+    "description": "NVIDIA Corporation stands as a prominent provider of advanced graphics, computational, and networking solutions, operating across the United States, Taiwan, China, and numerous international markets. Its Graphics division encompasses GeForce GPUs, central to PC gaming and personal computing experiences, along with the GeForce NOW cloud gaming service and its supporting infrastructure, as well as dedicated solutions for various gaming platforms. For professional visualization, it provides Quadro and NVIDIA RTX GPUs for enterprise workstations, further offering vGPU software designed for cloud-centric visual and virtual computing, automotive platforms for in-vehicle infotainment, and the Omniverse software suite, facilitating 3D design and virtual world creation. The Compute & Networking segment is a cornerstone for AI, high-performance computing (HPC), and accelerated data center platforms. It integrates Mellanox networking and interconnect solutions, delivers automotive AI Cockpit technologies, fosters autonomous driving development through strategic agreements, and offers comprehensive autonomous vehicle solutions. This segment also manufactures cryptocurrency mining processors, supplies Jetson platforms for robotics and other embedded applications, and offers enterprise AI software, including NVIDIA AI Enterprise. These diverse offerings find widespread application across the gaming, professional visualization, data center, and automotive sectors. NVIDIA distributes its portfolio through a broad ecosystem, engaging original equipment and device manufacturers, system integrators, add-in board makers, retail channels, software vendors, internet and cloud service providers, automotive companies (both manufacturers and tier-1 suppliers), mapping firms, nascent technology ventures, and other industry stakeholders. A notable strategic partnership exists with Kroger Co. Founded in 1993, NVIDIA Corporation maintains its corporate headquarters in Santa Clara, California.",
+    "sector": "Technology",
+    "industry": "Semiconductors",
+    "country": "US",
+    "exchange": "NASDAQ",
+    "market_cap": 4962156270000.0,
+    "market_cap_label": null,
+    "segments": [
+      {
+        "name": "Data Center",
+        "revenue": 193737000000.0,
+        "pct": 0.89718808176421
+      },
+      {
+        "name": "Gaming",
+        "revenue": 16042000000.0,
+        "pct": 0.07428984245477868
+      },
+      {
+        "name": "Professional Visualization",
+        "revenue": 3191000000.0,
+        "pct": 0.014777389806333299
+      },
+      {
+        "name": "Automotive",
+        "revenue": 2349000000.0,
+        "pct": 0.01087812242402912
+      },
+      {
+        "name": "OEM And Other",
+        "revenue": 619000000.0,
+        "pct": 0.0028665635506487973
+      }
+    ],
+    "source": "fmp"
+  }
+}

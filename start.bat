@@ -5,7 +5,17 @@ if not exist .venv (
 )
 call .venv\Scripts\activate.bat
 pip install -r requirements.txt -q
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr /R ":8001.*LISTENING"') do taskkill /F /PID %%a >nul 2>&1
-echo Starting Thesis Tool on http://127.0.0.1:8001
-echo Apple: http://127.0.0.1:8001/?ticker=AAPL
-uvicorn main:app --reload --host 127.0.0.1 --port 8001
+
+set PORT=8002
+echo Stopping prior servers on ports 8001 and %PORT%...
+for %%P in (8001 %PORT%) do (
+  for /L %%i in (1,1,5) do (
+    for /f "tokens=5" %%a in ('netstat -aon ^| findstr /R ":%%P.*LISTENING"') do taskkill /F /PID %%a >nul 2>&1
+    timeout /t 1 /nobreak >nul
+  )
+)
+
+echo Starting Thesis Tool on http://127.0.0.1:%PORT%
+echo Apple: http://127.0.0.1:%PORT%/?ticker=AAPL
+echo Multiples: http://127.0.0.1:%PORT%/?ticker=AAPL#valuation-multiples
+uvicorn main:app --reload --host 127.0.0.1 --port %PORT%
